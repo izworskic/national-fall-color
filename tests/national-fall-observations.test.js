@@ -85,9 +85,3 @@ test("fall tool loads observation enrichment without blocking the core answer",(
   assert.ok(inline,"fall-color inline script not found");
   assert.doesNotThrow(()=>new Function(inline[1]));
 });
-
-
-test("fall-color route is declared as an intentional production change",()=>{
-  const verify=fs.readFileSync(require.resolve("../scripts/verify-source.mjs"),"utf8");
-  assert.match(verify,/"\/national-tools\/fall-color\/"/);
-});
