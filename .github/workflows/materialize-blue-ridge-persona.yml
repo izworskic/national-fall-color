@@ -1,0 +1,44 @@
+name: Materialize Blue Ridge persona UX
+on:
+  push:
+    branches: ["publish-blue-ridge-persona"]
+permissions:
+  contents: write
+jobs:
+  materialize:
+    if: ${{ !contains(github.event.head_commit.message, '[materialized]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate current Blue Ridge source
+        run: |
+          node scripts/generate-location-pages.mjs
+          node scripts/add-blue-ridge-surface.mjs
+          node scripts/add-blue-ridge-visual-verification.mjs
+          node scripts/add-blue-ridge-persona-ux.mjs
+      - name: Remove persona transform from build pipeline
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+          for (const k of ['vercel-build','test']) {
+            p.scripts[k]=p.scripts[k].replace(' && node scripts/add-blue-ridge-persona-ux.mjs','');
+          }
+          fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');
+          NODE
+      - name: Verify materialized page without persona build transform
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm test
+          npm run vercel-build
+      - name: Commit materialized source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/national-tools/fall-color/blue-ridge-parkway/index.html package.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Materialize Blue Ridge persona UX [materialized]"
+          git push
