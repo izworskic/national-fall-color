@@ -104,9 +104,11 @@ blueRidge = replaceIfPresent(
 fs.writeFileSync(blueRidgePath, blueRidge);
 
 let api = fs.readFileSync(apiPath, "utf8");
-const oldRoadDate = '  const updated = text.match(/(?:updated|current as of)\\s*:?[ ]*([A-Z][a-z]+\\s+\\d{1,2},\\s+20\\d{2})/i)?.[1] || null;';
-const newRoadDate = '  const updated = text.match(/(?:road status as of|updated|current as of)[^.!?]{0,90}?([A-Z][a-z]+\\s+\\d{1,2},\\s+20\\d{2})/i)?.[1] || null;';
-api = replaceIfPresent(api, oldRoadDate, newRoadDate);
+const apiLines = api.split("\n");
+const roadDateLine = apiLines.findIndex((line) => line.includes("const updated = text.match") && line.includes("current as of"));
+if (roadDateLine < 0) throw new Error("Blue Ridge NPS road-status date parser anchor missing");
+apiLines[roadDateLine] = '  const updated = text.match(/(?:road status as of|updated|current as of).{0,110}?([A-Z][a-z]+\\s+\\d{1,2},\\s+20\\d{2})/i)?.[1] || null;';
+api = apiLines.join("\n");
 fs.writeFileSync(apiPath, api);
 
 if (fs.existsSync(sitemapPath)) {
