@@ -7,6 +7,7 @@ const pagePath = path.join(__dirname, '..', 'public/national-tools/fall-color/bl
 
 test('Blue Ridge first-screen planner is organized around visitor decisions', () => {
   const html = fs.readFileSync(pagePath, 'utf8');
+  assert.match(html, /fall color trip planner/);
   assert.match(html, /Make this useful for your trip/);
   assert.match(html, /Where will you be driving\?/);
   assert.match(html, /Anywhere \/ I’m flexible/);
@@ -23,6 +24,7 @@ test('Blue Ridge first-screen planner is organized around visitor decisions', ()
 
 test('Blue Ridge visual evidence is phrased for visitors before technical detail', () => {
   const html = fs.readFileSync(pagePath, 'utf8');
+  assert.match(html, /current camera checks/);
   assert.match(html, /See what the leaves look like before you drive/);
   assert.match(html, /See live cameras/);
   assert.match(html, /change from summer green/);
