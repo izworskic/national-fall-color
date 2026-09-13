@@ -9,14 +9,16 @@ test('Blue Ridge first-screen planner is organized around visitor decisions', ()
   const html = fs.readFileSync(pagePath, 'utf8');
   assert.match(html, /Make this useful for your trip/);
   assert.match(html, /Where will you be driving\?/);
-  assert.match(html, /Entire Parkway/);
+  assert.match(html, /Anywhere \/ I’m flexible/);
   assert.match(html, /Boone \/ Blowing Rock/);
   assert.match(html, /Asheville/);
   assert.match(html, /Waynesville \/ Cherokee/);
   assert.match(html, /Today/);
   assert.match(html, /7 days from now/);
+  assert.match(html, /evidence used/);
+  assert.match(html, /Live camera views always show current conditions/);
   assert.match(html, /Best drive near/);
-  assert.match(html, /Try this stretch:/);
+  assert.match(html, /Aim for /);
 });
 
 test('Blue Ridge visual evidence is phrased for visitors before technical detail', () => {
@@ -34,6 +36,7 @@ test('Blue Ridge persona selection can refresh visual verification', () => {
   const html = fs.readFileSync(pagePath, 'utf8');
   assert.doesNotMatch(html, /blue-ridge-decision-ready",event=>load\(event\.detail\),\{once:true\}/);
   assert.match(html, /__personaDerived/);
+  assert.match(html, /visualRequest/);
   assert.match(html, /new CustomEvent\("blue-ridge-decision-ready"/);
 });
 
