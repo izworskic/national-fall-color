@@ -62,6 +62,10 @@ test("Blue Ridge page is a distinct indexable corridor decision surface", () => 
   assert.match(html, /Do not make a foliage-only trip yet/);
   assert.match(html, /Strong historical color window/);
   assert.match(html, /Do not confuse “best available” with peak/);
+  assert.match(html, /Suggested sampling corridor/);
+  assert.match(html, /not a claim that color is uniform across every mile/);
+  assert.match(html, /evidence coverage/);
+  assert.match(html, /Elevation can differ sharply inside that radius/);
   assert.match(html, /What changes over the next 7 days\?/);
   assert.match(html, /The Parkway, north to south/);
   assert.match(html, /api\/blue-ridge-fall-color/);
