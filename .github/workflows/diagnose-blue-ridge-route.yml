@@ -1,0 +1,27 @@
+name: Diagnose Blue Ridge route
+on:
+  push:
+    branches: ["diagnose-blue-ridge-404"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe public and Vercel routes
+        shell: bash
+        run: |
+          set +e
+          urls=(
+            "https://chrisizworski.com/national-tools/fall-color/blue-ridge-parkway/"
+            "https://national-fall-color.vercel.app/national-tools/fall-color/"
+            "https://national-fall-color.vercel.app/national-tools/fall-color/blue-ridge-parkway/"
+            "https://national-fall-color.vercel.app/national-tools/fall-color/blue-ridge-parkway/index.html"
+            "https://national-fall-color.vercel.app/api/blue-ridge-fall-color"
+            "https://national-fall-color-git-main-izworski-gmailcoms-projects.vercel.app/national-tools/fall-color/blue-ridge-parkway/"
+            "https://national-fall-color-git-main-izworski-gmailcoms-projects.vercel.app/national-tools/fall-color/blue-ridge-parkway/index.html"
+            "https://national-fall-color-git-blue-cb95e3-izworski-gmailcoms-projects.vercel.app/national-tools/fall-color/blue-ridge-parkway/"
+          )
+          for u in "${urls[@]}"; do
+            echo "===== $u"
+            curl -L -sS --max-time 20 -o /tmp/body -w 'HTTP=%{http_code} FINAL=%{url_effective}\n' "$u"
+            head -c 220 /tmp/body | tr '\n' ' '; echo
+          done
