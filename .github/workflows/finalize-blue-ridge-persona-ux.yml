@@ -53,6 +53,7 @@ jobs:
           p = Path('tests/blue-ridge-visual-verification.test.js')
           s = p.read_text()
           s = s.replace('assert.match(html, /What do the cameras say now\\?/);', 'assert.match(html, /See what the leaves look like before you drive/);')
+          s = s.replace('assert.match(html, /link-only/i);', 'assert.match(html, /link to the source rather than republishing third-party feeds/i);')
           if '/What is this camera signal\\?/' not in s:
               s = s.replace('assert.match(html, /Satellite cross-check/);', 'assert.match(html, /What is this camera signal\\?/);\n  assert.match(html, /Satellite coverage and technical cross-check/);\n  assert.match(html, /Satellite cross-check/);')
           p.write_text(s)
@@ -60,6 +61,7 @@ jobs:
           p = Path('tests/blue-ridge-persona-ux.test.js')
           s = p.read_text()
           s = s.replace('assert.match(html, /Entire Parkway/);', 'assert.match(html, /Anywhere \/ I’m flexible/);')
+          s = s.replace('assert.match(html, /Try this stretch:/);', 'assert.match(html, /Aim for /);')
           if '/evidence used/' not in s:
               s = s.replace('assert.match(html, /7 days from now/);', 'assert.match(html, /7 days from now/);\n  assert.match(html, /evidence used/);\n  assert.match(html, /Live camera views always show current conditions/);')
           if '/visualRequest/' not in s:
