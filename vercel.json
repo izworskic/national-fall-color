@@ -12,6 +12,16 @@
       ]
     }
   ],
+  "rewrites": [
+    {
+      "source": "/national-tools/fall-color/blue-ridge-parkway",
+      "destination": "/national-tools/fall-color/blue-ridge-parkway/index.html"
+    },
+    {
+      "source": "/national-tools/fall-color/blue-ridge-parkway/",
+      "destination": "/national-tools/fall-color/blue-ridge-parkway/index.html"
+    }
+  ],
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "public"
 }
