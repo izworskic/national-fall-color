@@ -71,7 +71,7 @@ if (!blueRidge.includes(".trip-verdict{")) {
 }
 
 if (!blueRidge.includes("function representativeDrive(corridor,best)")) {
-  const marker = " function tripVerdict(best){";
+  const marker = " function render(data){";
   const helper = ` function representativeDrive(corridor,best){
   const sorted=(corridor||[]).slice().sort((a,b)=>Number(a.milepost)-Number(b.milepost));
   const index=sorted.findIndex(item=>item.id===best?.id);
@@ -85,7 +85,7 @@ if (!blueRidge.includes("function representativeDrive(corridor,best)")) {
   return{start:Math.round(start),end:Math.round(end)};
  }
 `;
-  if (!blueRidge.includes(marker)) throw new Error("Blue Ridge trip verdict marker missing");
+  if (!blueRidge.includes(marker)) throw new Error("Blue Ridge render marker missing for representative drive");
   blueRidge = blueRidge.replace(marker, helper + marker);
 }
 
