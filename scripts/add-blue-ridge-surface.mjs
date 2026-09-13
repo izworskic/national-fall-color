@@ -42,12 +42,24 @@ blueRidge = replaceIfPresent(
   '<meta property="og:title" content="Blue Ridge Parkway Fall Colors 2026: Best Color Now">',
   '<meta property="og:title" content="Blue Ridge Parkway Fall Colors 2026: Best Drive Now">',
 );
+blueRidge = replaceIfPresent(
+  blueRidge,
+  '<span>confidence</span>',
+  '<span>evidence coverage</span>',
+);
 
 if (!blueRidge.includes('id="trip-verdict"')) {
   const label = '<div class="decision-label">Best modeled corridor now</div>';
   const verdict = `${label}\n<div id="trip-verdict" class="trip-verdict watch"><span id="trip-verdict-label">CHECKING</span><strong id="trip-verdict-headline">Is a foliage-specific drive worth it yet?</strong></div>`;
   if (!blueRidge.includes(label)) throw new Error("Blue Ridge decision label anchor missing");
   blueRidge = blueRidge.replace(label, verdict);
+}
+
+if (!blueRidge.includes('id="drive-segment"')) {
+  const why = '<div class="why"><h2>Why this is the current pick</h2>';
+  const segment = `<p id="drive-segment" class="decision-note">Calculating the Parkway stretch represented by this sampling anchor…</p>\n${why}`;
+  if (!blueRidge.includes(why)) throw new Error("Blue Ridge why-section anchor missing");
+  blueRidge = blueRidge.replace(why, segment);
 }
 
 if (!blueRidge.includes('data-decision-actions="true"')) {
@@ -60,6 +72,25 @@ if (!blueRidge.includes('data-decision-actions="true"')) {
 if (!blueRidge.includes(".trip-verdict{")) {
   const css = `.trip-verdict{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:9px 0 13px;padding:10px 12px;border:1px solid #d8d2c6;border-radius:4px;background:#faf9f6}.trip-verdict span{font:700 10.5px/1 Arial,sans-serif;letter-spacing:.07em;text-transform:uppercase;padding:5px 7px;border-radius:3px;background:#ece8df;color:#5d574d}.trip-verdict strong{font-size:17px;font-weight:400}.trip-verdict.go{background:#eef5ec;border-color:#b9cfb6}.trip-verdict.go span{background:#2c5f2d;color:#fff}.trip-verdict.soon{background:#f7f3e8;border-color:#d8c79d}.trip-verdict.soon span{background:#8a6022;color:#fff}.trip-verdict.early,.trip-verdict.late{background:#f7f4ee}.trip-verdict.early span,.trip-verdict.late span{background:#6f6b62;color:#fff}.trip-verdict.blocked{background:#fbf1ef;border-color:#dbbbb5}.trip-verdict.blocked span{background:#8b3a31;color:#fff}.decision-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}.button-link.secondary{background:#fff;color:var(--green)}.button-link.secondary:hover{background:#f1f6ef}.decision-note{font-size:13px;color:#6b675f;margin:10px 0 0}`;
   blueRidge = blueRidge.replace("</style>", `${css}\n</style>`);
+}
+
+if (!blueRidge.includes("function representativeDrive(corridor,best)")) {
+  const marker = " function tripVerdict(best){";
+  const helper = ` function representativeDrive(corridor,best){
+  const sorted=(corridor||[]).slice().sort((a,b)=>Number(a.milepost)-Number(b.milepost));
+  const index=sorted.findIndex(item=>item.id===best?.id);
+  if(index<0)return null;
+  const mp=Number(sorted[index].milepost);
+  if(!Number.isFinite(mp))return null;
+  const prev=index>0?Number(sorted[index-1].milepost):null;
+  const next=index<sorted.length-1?Number(sorted[index+1].milepost):null;
+  const start=Math.max(0,Number.isFinite(prev)?(prev+mp)/2:mp-25);
+  const end=Math.min(469,Number.isFinite(next)?(mp+next)/2:mp+25);
+  return{start:Math.round(start),end:Math.round(end)};
+ }
+`;
+  if (!blueRidge.includes(marker)) throw new Error("Blue Ridge trip verdict marker missing");
+  blueRidge = blueRidge.replace(marker, helper + marker);
 }
 
 if (!blueRidge.includes("function tripVerdict(best)")) {
@@ -89,10 +120,23 @@ if (!blueRidge.includes("const verdict=tripVerdict(best);")) {
   blueRidge = blueRidge.replace(anchor, insertion);
 }
 
+if (!blueRidge.includes("const drive=representativeDrive")) {
+  const anchor = '  $("best-read").textContent=verdict.detail;';
+  const insertion = `${anchor}\n  const drive=representativeDrive(data.corridor||[],best);\n  $(\"drive-segment\").textContent=drive?\"Suggested sampling corridor: MP \"+drive.start+\"–\"+drive.end+\" around \"+best.name+\". This is the Parkway stretch represented by the anchor, not a claim that color is uniform across every mile.\":\"Use the anchor milepost as the center of the recommendation and verify local conditions before a long drive.\";`;
+  if (!blueRidge.includes(anchor)) throw new Error("Blue Ridge best-read anchor missing");
+  blueRidge = blueRidge.replace(anchor, insertion);
+}
+
 blueRidge = replaceIfPresent(
   blueRidge,
   '  $("best-read").textContent=`${best.corridor}: ${best.timing?.stage||"timing available"}. This is the strongest modeled trip match among the sampled Parkway anchors today.`;',
   '  $("best-read").textContent=verdict.detail;',
+);
+
+blueRidge = replaceIfPresent(
+  blueRidge,
+  '  $("why-current").textContent=obs?.available?`Ground observations: ${obs.interpretation} ${obs.yes_records||0} recent yes record${obs.yes_records===1?\'\':\'s\'} across ${obs.yes_sites||0} yes-reporting site${obs.yes_sites===1?\'\':\'s\'} within ${obs.radius_miles} miles.`:"Ground observations: currently unavailable; no observation claim is substituted.";',
+  '  $("why-current").textContent=obs?.available?`Regional plant observations: ${obs.interpretation} ${obs.yes_records||0} recent yes record${obs.yes_records===1?\'\':\'s\'} across ${obs.yes_sites||0} yes-reporting site${obs.yes_sites===1?\'\':\'s\'} within ${obs.radius_miles} miles. Elevation can differ sharply inside that radius, so these observations do not move the corridor ranking.`:"Regional plant observations: currently unavailable; no observation claim is substituted.";',
 );
 
 blueRidge = replaceIfPresent(
@@ -123,5 +167,7 @@ const built = fs.readFileSync(parentPath, "utf8");
 const builtBlueRidge = fs.readFileSync(blueRidgePath, "utf8");
 if (!built.includes("data-blue-ridge-feature") || !built.includes(route)) throw new Error("Blue Ridge parent handoff was not installed");
 if (!builtBlueRidge.includes('id="trip-verdict"') || !builtBlueRidge.includes("function tripVerdict(best)")) throw new Error("Blue Ridge trip-verdict hardening was not installed");
+if (!builtBlueRidge.includes("function representativeDrive(corridor,best)")) throw new Error("Blue Ridge representative drive helper missing");
+if (!builtBlueRidge.includes("evidence coverage")) throw new Error("Blue Ridge evidence-coverage label missing");
 if (!builtBlueRidge.includes(npsRoadUrl)) throw new Error("Blue Ridge official road-status action missing");
-console.log("Wired Blue Ridge Parkway corridor surface, explicit API contract, trip verdict and road-status hardening.");
+console.log("Wired Blue Ridge Parkway corridor surface, explicit API contract, trip verdict, representative drive and road-status hardening.");
