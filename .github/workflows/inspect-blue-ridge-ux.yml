@@ -1,0 +1,27 @@
+name: Inspect Blue Ridge UX
+on:
+  pull_request:
+    branches: ["main"]
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --ignore-scripts
+      - name: Build Blue Ridge surface and show decision shell
+        run: |
+          node scripts/generate-location-pages.mjs
+          node scripts/add-blue-ridge-surface.mjs
+          node scripts/add-blue-ridge-visual-verification.mjs
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('public/national-tools/fall-color/blue-ridge-parkway/index.html').read_text()
+          print('LEN',len(s))
+          for term in ['trip-verdict','Best modeled corridor now','What do the cameras say now?','What changes over the next 7 days?']:
+              i=s.find(term)
+              print('\n===',term,'@',i,'===')
+              print(s[max(0,i-1800):i+3500])
+          PY
