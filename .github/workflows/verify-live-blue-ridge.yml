@@ -1,0 +1,19 @@
+name: Verify live Blue Ridge persona page
+on:
+  push:
+    branches: ["diagnose-vercel-persona-deploy"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe public canonical
+        run: |
+          set -euo pipefail
+          URL='https://chrisizworski.com/national-tools/fall-color/blue-ridge-parkway/'
+          code=$(curl -L -sS -o /tmp/page.html -w '%{http_code}' "$URL")
+          echo "HTTP=$code"
+          test "$code" = "200"
+          grep -F "Where will you be driving?" /tmp/page.html
+          grep -F "See what the leaves look like before you drive" /tmp/page.html
+          grep -F "Boone / Blowing Rock" /tmp/page.html
+          echo "LIVE_PERSONA_OK=1"
