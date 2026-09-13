@@ -44,7 +44,7 @@ test("next-week story can describe a downslope shift without inventing a percent
 test("U.S. Drought Monitor categories are explicit stress labels", () => {
   assert.equal(engine.droughtLabel(0), "D0 Abnormally Dry");
   assert.equal(engine.droughtLabel(4), "D4 Exceptional Drought");
-  assert.equal(engine.droughtLabel(null), null);
+  assert.equal(engine.droughtLabel(9), null);
 });
 
 test("Blue Ridge page is a distinct indexable corridor decision surface", () => {
