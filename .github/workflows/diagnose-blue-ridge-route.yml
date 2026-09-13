@@ -11,14 +11,14 @@ jobs:
         run: |
           set +e
           urls=(
+            "https://chrisizworski.com/national-tools/fall-color/"
             "https://chrisizworski.com/national-tools/fall-color/blue-ridge-parkway/"
+            "https://chrisizworski.com/national-tools/fall-color/blue-ridge-parkway/index.html"
             "https://national-fall-color.vercel.app/national-tools/fall-color/"
             "https://national-fall-color.vercel.app/national-tools/fall-color/blue-ridge-parkway/"
             "https://national-fall-color.vercel.app/national-tools/fall-color/blue-ridge-parkway/index.html"
             "https://national-fall-color.vercel.app/api/blue-ridge-fall-color"
-            "https://national-fall-color-git-main-izworski-gmailcoms-projects.vercel.app/national-tools/fall-color/blue-ridge-parkway/"
-            "https://national-fall-color-git-main-izworski-gmailcoms-projects.vercel.app/national-tools/fall-color/blue-ridge-parkway/index.html"
-            "https://national-fall-color-git-blue-cb95e3-izworski-gmailcoms-projects.vercel.app/national-tools/fall-color/blue-ridge-parkway/"
+            "https://national-fall-color.vercel.app/api/blue-ridge-visual-verification?lat=35.96806&lon=-81.93222&milepost=316.4"
           )
           for u in "${urls[@]}"; do
             echo "===== $u"
