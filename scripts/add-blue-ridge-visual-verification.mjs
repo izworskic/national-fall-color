@@ -82,6 +82,11 @@ const visualScript = `<script data-blue-ridge-visual-script>
    if(/early|summer/i.test(stage||""))return "visual-stage warn";
    return "visual-stage";
  }
+ function cameraCard(cam){
+   const distance=cam.distance_mileposts==null?"Corridor view":esc(cam.distance_mileposts)+" mileposts from pick";
+   const mode=cam.machine_analysis==="phenocam-gcc"?"Derived GCC analyzed here; image stays at source":"Open source camera/view";
+   return '<a class="camera-link" href="'+esc(cam.url)+'" target="_blank" rel="noopener"><strong>'+esc(cam.name)+'</strong><small>MP '+esc(cam.milepost)+' · '+esc(cam.source)+'</small><small class="camera-distance">'+distance+'</small><small>'+mode+' ↗</small></a>';
+ }
  function render(visual,data){
    const best=data?.decision?.best_now;
    const evidence=visual?.automated_camera;
@@ -115,7 +120,7 @@ const visualScript = `<script data-blue-ridge-visual-script>
      $("satellite-detail").textContent="The fall-color recommendation continues without substituting a satellite claim.";
    }
    const cameras=Array.isArray(visual?.nearby_cameras)?visual.nearby_cameras:[];
-   $("visual-camera-links").innerHTML=cameras.map(cam=>`<a class="camera-link" href="${esc(cam.url)}" target="_blank" rel="noopener"><strong>${esc(cam.name)}</strong><small>MP ${esc(cam.milepost)} · ${esc(cam.source)}</small><small class="camera-distance">${cam.distance_mileposts==null?"Corridor view":esc(cam.distance_mileposts)+" mileposts from pick"}</small><small>${cam.machine_analysis==="phenocam-gcc"?"Derived GCC analyzed here; image stays at source":"Open source camera/view"} ↗</small></a>`).join("")||'<div class="camera-link">No camera links available.</div>';
+   $("visual-camera-links").innerHTML=cameras.map(cameraCard).join("")||'<div class="camera-link">No camera links available.</div>';
    $("visual-updated").textContent="Visual evidence retrieved "+new Date(visual.retrieved_at).toLocaleString()+" · "+(visual.camera_registry?.machine_analyzable||0)+" machine-analyzable camera source · "+(visual.camera_registry?.total||0)+" corridor camera links registered.";
  }
  async function load(data){
