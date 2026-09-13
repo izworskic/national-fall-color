@@ -64,14 +64,27 @@ if (!blueRidge.includes(".trip-verdict{")) {
 
 if (!blueRidge.includes("function tripVerdict(best)")) {
   const marker = " function render(data){";
-  const helper = ` function tripVerdict(best){\n  const d=Number(best?.timing?.days_from_midpoint);\n  const stage=best?.timing?.stage||\"historical timing available\";\n  const place=best?.name||\"the best sampled anchor\";\n  const corridor=best?.corridor||\"Blue Ridge Parkway\";\n  if(best?.road?.possible_closure)return{level:\"blocked\",label:\"ROAD ISSUE\",headline:\"Do not route here until NPS confirms access\",detail:\`${place} is the strongest timing match, but a possible NPS closure overlaps this anchor. Treat road access as the deciding factor before a foliage trip.\`};\n  if(!Number.isFinite(d))return{level:\"watch\",label:\"WATCH\",headline:\"Timing confidence is limited\",detail:\`${corridor}: ${stage}. This is the strongest sampled match, not proof of peak color.\`};\n  if(d < -21)return{level:\"early\",label:\"TOO EARLY\",headline:\"Do not make a foliage-only trip yet\",detail:\`${place} is the best sampled anchor today, but it is still ${Math.abs(Math.round(d))} days before its historical mid-transition. If you are already on the Parkway, this is the best direction to try; otherwise wait.\`};\n  if(d < -8)return{level:\"watch\",label:\"WATCH\",headline:\"The season is approaching\",detail:\`${place} is the strongest sampled bet, about ${Math.abs(Math.round(d))} days before its historical mid-transition. A dedicated color trip is becoming reasonable, but this is not a peak-color claim.\`};\n  if(d <= 7)return{level:\"go\",label:\"GO\",headline:\"Strong historical color window\",detail:\`${place} is inside its strongest historical transition window. Current observations and weather still determine how vivid the drive looks on the ground.\`};\n  if(d <= 18)return{level:\"soon\",label:\"GO SOON\",headline:\"Late side of the typical transition\",detail:\`${place} is still the strongest sampled option, but it is ${Math.round(d)} days past its historical midpoint. Wind and leaf drop matter more now, so do not delay solely for a better modeled date.\`};\n  return{level:\"late\",label:\"LATE\",headline:\"Do not confuse “best available” with peak\",detail:\`${place} is the strongest remaining sampled option, but this anchor is ${Math.round(d)} days past its historical midpoint. Favor lower elevations or treat the drive as a scenic trip rather than a foliage chase.\`};\n }\n`;
+  const helper = ` function tripVerdict(best){
+  const d=Number(best?.timing?.days_from_midpoint);
+  const stage=best?.timing?.stage||"historical timing available";
+  const place=best?.name||"the best sampled anchor";
+  const corridor=best?.corridor||"Blue Ridge Parkway";
+  if(best?.road?.possible_closure)return{level:"blocked",label:"ROAD ISSUE",headline:"Do not route here until NPS confirms access",detail:place+" is the strongest timing match, but a possible NPS closure overlaps this anchor. Treat road access as the deciding factor before a foliage trip."};
+  if(!Number.isFinite(d))return{level:"watch",label:"WATCH",headline:"Timing confidence is limited",detail:corridor+": "+stage+". This is the strongest sampled match, not proof of peak color."};
+  if(d < -21)return{level:"early",label:"TOO EARLY",headline:"Do not make a foliage-only trip yet",detail:place+" is the best sampled anchor today, but it is still "+Math.abs(Math.round(d))+" days before its historical mid-transition. If you are already on the Parkway, this is the best direction to try; otherwise wait."};
+  if(d < -8)return{level:"watch",label:"WATCH",headline:"The season is approaching",detail:place+" is the strongest sampled bet, about "+Math.abs(Math.round(d))+" days before its historical mid-transition. A dedicated color trip is becoming reasonable, but this is not a peak-color claim."};
+  if(d <= 7)return{level:"go",label:"GO",headline:"Strong historical color window",detail:place+" is inside its strongest historical transition window. Current observations and weather still determine how vivid the drive looks on the ground."};
+  if(d <= 18)return{level:"soon",label:"GO SOON",headline:"Late side of the typical transition",detail:place+" is still the strongest sampled option, but it is "+Math.round(d)+" days past its historical midpoint. Wind and leaf drop matter more now, so do not delay solely for a better modeled date."};
+  return{level:"late",label:"LATE",headline:"Do not confuse “best available” with peak",detail:place+" is the strongest remaining sampled option, but this anchor is "+Math.round(d)+" days past its historical midpoint. Favor lower elevations or treat the drive as a scenic trip rather than a foliage chase."};
+ }
+`;
   if (!blueRidge.includes(marker)) throw new Error("Blue Ridge render marker missing");
   blueRidge = blueRidge.replace(marker, helper + marker);
 }
 
 if (!blueRidge.includes("const verdict=tripVerdict(best);")) {
   const anchor = "  const current=contextFor(data,best);";
-  const insertion = `${anchor}\n  const verdict=tripVerdict(best);\n  $(\"trip-verdict\").className=\`trip-verdict ${'${verdict.level}'}\`;\n  $(\"trip-verdict-label\").textContent=verdict.label;\n  $(\"trip-verdict-headline\").textContent=verdict.headline;`;
+  const insertion = `${anchor}\n  const verdict=tripVerdict(best);\n  $(\"trip-verdict\").className=\"trip-verdict \"+verdict.level;\n  $(\"trip-verdict-label\").textContent=verdict.label;\n  $(\"trip-verdict-headline\").textContent=verdict.headline;`;
   if (!blueRidge.includes(anchor)) throw new Error("Blue Ridge render context anchor missing");
   blueRidge = blueRidge.replace(anchor, insertion);
 }
