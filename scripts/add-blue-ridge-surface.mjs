@@ -42,11 +42,7 @@ blueRidge = replaceIfPresent(
   '<meta property="og:title" content="Blue Ridge Parkway Fall Colors 2026: Best Color Now">',
   '<meta property="og:title" content="Blue Ridge Parkway Fall Colors 2026: Best Drive Now">',
 );
-blueRidge = replaceIfPresent(
-  blueRidge,
-  '<span>confidence</span>',
-  '<span>evidence coverage</span>',
-);
+blueRidge = replaceIfPresent(blueRidge, '<span>confidence</span>', '<span>evidence coverage</span>');
 
 if (!blueRidge.includes('id="trip-verdict"')) {
   const label = '<div class="decision-label">Best modeled corridor now</div>';
@@ -121,10 +117,10 @@ if (!blueRidge.includes("const verdict=tripVerdict(best);")) {
 }
 
 if (!blueRidge.includes("const drive=representativeDrive")) {
-  const anchor = '  $("best-read").textContent=verdict.detail;';
-  const insertion = `${anchor}\n  const drive=representativeDrive(data.corridor||[],best);\n  $(\"drive-segment\").textContent=drive?\"Suggested sampling corridor: MP \"+drive.start+\"–\"+drive.end+\" around \"+best.name+\". This is the Parkway stretch represented by the anchor, not a claim that color is uniform across every mile.\":\"Use the anchor milepost as the center of the recommendation and verify local conditions before a long drive.\";`;
-  if (!blueRidge.includes(anchor)) throw new Error("Blue Ridge best-read anchor missing");
-  blueRidge = blueRidge.replace(anchor, insertion);
+  const oldRead = '  $("best-read").textContent=`${best.corridor}: ${best.timing?.stage||"timing available"}. This is the strongest modeled trip match among the sampled Parkway anchors today.`;';
+  const insertion = '  $("best-read").textContent=verdict.detail;\n  const drive=representativeDrive(data.corridor||[],best);\n  $("drive-segment").textContent=drive?"Suggested sampling corridor: MP "+drive.start+"–"+drive.end+" around "+best.name+". This is the Parkway stretch represented by the anchor, not a claim that color is uniform across every mile.":"Use the anchor milepost as the center of the recommendation and verify local conditions before a long drive.";';
+  if (!blueRidge.includes(oldRead)) throw new Error("Blue Ridge original best-read anchor missing");
+  blueRidge = blueRidge.replace(oldRead, insertion);
 }
 
 blueRidge = replaceIfPresent(
