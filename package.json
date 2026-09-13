@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": false,
   "scripts": {
-    "vercel-build": "node scripts/generate-location-pages.mjs && node scripts/add-blue-ridge-surface.mjs && node scripts/add-blue-ridge-visual-verification.mjs && node scripts/inject-ga4.mjs",
-    "test": "node scripts/generate-location-pages.mjs && node scripts/add-blue-ridge-surface.mjs && node scripts/add-blue-ridge-visual-verification.mjs && node --test tests/*.test.js"
+    "vercel-build": "node scripts/generate-location-pages.mjs && node scripts/add-blue-ridge-surface.mjs && node scripts/add-blue-ridge-visual-verification.mjs && node scripts/add-blue-ridge-persona-ux.mjs && node scripts/inject-ga4.mjs",
+    "test": "node scripts/generate-location-pages.mjs && node scripts/add-blue-ridge-surface.mjs && node scripts/add-blue-ridge-visual-verification.mjs && node scripts/add-blue-ridge-persona-ux.mjs && node --test tests/*.test.js"
   },
   "engines": {
     "node": "22.x"

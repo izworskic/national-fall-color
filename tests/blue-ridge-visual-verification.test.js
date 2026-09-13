@@ -63,13 +63,15 @@ test("camera greenness stages distinguish summer-like, active and late transitio
 test("Blue Ridge page contains visual verification, rights boundary and satellite truth boundary", () => {
   const html = fs.readFileSync(pagePath, "utf8");
   assert.match(html, /data-visual-verification="true"/);
-  assert.match(html, /What do the cameras say now\?/);
+  assert.match(html, /See what the leaves look like before you drive/);
   assert.match(html, /machine-analyzed PhenoCam/i);
-  assert.match(html, /link-only/i);
+  assert.match(html, /link to the source rather than republishing third-party feeds/i);
+  assert.match(html, /What is this camera signal\?/);
+  assert.match(html, /Satellite coverage and technical cross-check/);
   assert.match(html, /Satellite cross-check/);
   assert.match(html, /does not change the foliage recommendation until spectral processing|do not change the foliage recommendation|spectral foliage analysis is not enabled yet/i);
   assert.match(html, /api\/blue-ridge-visual-verification/);
-  assert.match(html, /live camera phenology evidence/);
+  assert.match(html, /current camera checks/);
 });
 
 test("visual verification client script parses as JavaScript", () => {
