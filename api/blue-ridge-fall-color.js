@@ -167,7 +167,7 @@ function parseRoadClosures(html) {
       deduped.push(range);
     }
   }
-  const updated = text.match(/(?:updated|current as of)\s*:?[ ]*([A-Z][a-z]+\s+\d{1,2},\s+20\d{2})/i)?.[1] || null;
+  const updated = text.match(/(?:road status as of|updated|current as of).{0,110}?([A-Z][a-z]+\s+\d{1,2},\s+20\d{2})/i)?.[1] || null;
   return { ranges: deduped, updated };
 }
 
