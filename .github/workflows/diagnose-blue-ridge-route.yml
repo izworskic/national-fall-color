@@ -1,7 +1,7 @@
 name: Diagnose Blue Ridge route
 on:
-  push:
-    branches: ["diagnose-blue-ridge-404"]
+  pull_request:
+    branches: ["main"]
 jobs:
   probe:
     runs-on: ubuntu-latest
