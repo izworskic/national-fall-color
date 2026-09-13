@@ -1,0 +1,1 @@
+Known-good Vercel control branch created from commit 6468ca9f51d4e0e8a6864a979a95c2da69ce4898 on 2026-09-13. No application or build changes.
