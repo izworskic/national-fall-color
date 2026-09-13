@@ -1,0 +1,28 @@
+name: Diagnose Vercel persona deployment
+on:
+  push:
+    branches: ["diagnose-vercel-persona-deploy"]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check token availability
+        shell: bash
+        run: |
+          if [ -n "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN is configured"
+          else
+            echo "VERCEL_TOKEN is not configured"
+            exit 2
+          fi
+      - name: Inspect failed production deployment
+        shell: bash
+        run: npx --yes vercel@latest inspect dpl_CaoRJrnkFby9Junoy2cffpqCErKw --logs --token "$VERCEL_TOKEN"
