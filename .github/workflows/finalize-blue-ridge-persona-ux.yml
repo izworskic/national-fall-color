@@ -1,0 +1,80 @@
+name: Finalize Blue Ridge persona UX
+on:
+  push:
+    branches: ["blue-ridge-persona-ux"]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: blue-ridge-persona-ux
+          fetch-depth: 0
+      - name: Finalize persona UX and regression contracts
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('scripts/add-blue-ridge-persona-ux.mjs')
+          s = p.read_text()
+          s = s.replace('<button type="button" data-focus="all" aria-pressed="true">Entire Parkway</button>', '<button type="button" data-focus="all" aria-pressed="true">Anywhere / I’m flexible</button>')
+          s = s.replace('      <button type="button" data-horizon="7" aria-pressed="false">7 days from now</button>\n    </div>\n  </div>\n</div>`;', '      <button type="button" data-horizon="7" aria-pressed="false">7 days from now</button>\n    </div>\n  </div>\n  <p class="persona-scope-note">Live camera views always show current conditions. Choosing 7 days from now changes the timing outlook, not the camera date.</p>\n</div>`;')
+          s = s.replace("html = html.replace('<span>evidence coverage</span>', '<span>data depth</span>');", "html = html.replace('<span>evidence coverage</span>', '<span>evidence used</span>');")
+          hero_anchor = "html = html.replace(\n  '<p class=\"lede\">Where is the best fall-color bet now, what elevation band is next, and which part of the Parkway is worth the drive over the next seven days?</p>',"
+          hero_line = "html = html.replace('<div class=\"eyebrow\">Blue Ridge Parkway · elevation-aware foliage intelligence</div>', '<div class=\"eyebrow\">Blue Ridge Parkway · fall color trip planner</div>');\nhtml = html.replace('<meta name=\"description\" content=\"See whether Blue Ridge Parkway fall color is worth the trip yet, the strongest drive now, live camera phenology evidence, 7-day outlook, weather stress and NPS road context.\">', '<meta name=\"description\" content=\"See whether Blue Ridge Parkway fall color is worth the drive, where to go near Asheville, Boone or Virginia, current camera checks, a 7-day outlook and road status.\">');\n"
+          if hero_line not in s:
+              if hero_anchor not in s: raise SystemExit('hero anchor missing')
+              s = s.replace(hero_anchor, hero_line + hero_anchor)
+          s = s.replace('function depth(best,offset){const original=offset?data?.decision?.best_next_7d:data?.decision?.best_now;return original?.id===best?.id?"Live + historical":"Timing + road"}', 'function depth(best,offset){const original=offset?data?.decision?.best_next_7d:data?.decision?.best_now;return original?.id===best?.id?"Timing + conditions":"Timing + road"}')
+          s = s.replace('$("drive-segment").textContent=seg?"Try this stretch: roughly MP "+seg.start+"–"+seg.end+", centered on "+best.name+". Drive some elevation rather than betting on one overlook.":"Use "+best.name+" as the center of the drive and vary elevation around it.";', '$("drive-segment").textContent=seg?"Aim for "+best.name+". If roads are open, explore roughly MP "+seg.start+"–"+seg.end+" around it so you can gain or lose elevation instead of betting on one overlook.":"Aim for "+best.name+" and vary elevation around it after checking road status.";')
+          listener = 'html = html.replace(\'window.addEventListener("blue-ridge-decision-ready",event=>load(event.detail),{once:true});\', \'window.addEventListener("blue-ridge-decision-ready",event=>load(event.detail));\');'
+          race_patch = '''\nhtml = html.replace(' async function load(data){', ' let visualRequest=0;\\n async function load(data){\\n   const request=++visualRequest;');\nhtml = html.replace('     render(await response.json(),data);', '     const payload=await response.json();if(request!==visualRequest)return;render(payload,data);');\nhtml = html.replace('   }catch(error){\\n     $("visual-stage")', '   }catch(error){\\n     if(request!==visualRequest)return;\\n     $("visual-stage")');\n'''
+          if 'visualRequest=0' not in s:
+              if listener not in s: raise SystemExit('visual listener anchor missing')
+              s = s.replace(listener, listener + race_patch)
+          s = s.replace("  'Try this stretch:',", "  'Aim for ',")
+          required_anchor = "  'How this works, if you want the details',\n])"
+          if "'Live camera views always show current conditions'" not in s:
+              s = s.replace(required_anchor, "  'How this works, if you want the details',\n  'Live camera views always show current conditions',\n  'visualRequest',\n])")
+          p.write_text(s)
+
+          p = Path('tests/blue-ridge-fall-color.test.js')
+          s = p.read_text()
+          s = s.replace('assert.match(html, /evidence coverage/);', 'assert.match(html, /evidence used/);')
+          s = s.replace('assert.match(html, /What changes over the next 7 days\\?/);', 'assert.match(html, /If you can wait a week/);')
+          s = s.replace('assert.match(html, /The Parkway, north to south/);', 'assert.match(html, /Compare the whole Parkway/);')
+          if '/Where will you be driving\\?/' not in s:
+              s = s.replace('assert.match(html, /trip-verdict/);', 'assert.match(html, /trip-verdict/);\n  assert.match(html, /Where will you be driving\\?/);\n  assert.match(html, /Anywhere \/ I’m flexible/);')
+          p.write_text(s)
+
+          p = Path('tests/blue-ridge-visual-verification.test.js')
+          s = p.read_text()
+          s = s.replace('assert.match(html, /What do the cameras say now\\?/);', 'assert.match(html, /See what the leaves look like before you drive/);')
+          if '/What is this camera signal\\?/' not in s:
+              s = s.replace('assert.match(html, /Satellite cross-check/);', 'assert.match(html, /What is this camera signal\\?/);\n  assert.match(html, /Satellite coverage and technical cross-check/);\n  assert.match(html, /Satellite cross-check/);')
+          p.write_text(s)
+
+          p = Path('tests/blue-ridge-persona-ux.test.js')
+          s = p.read_text()
+          s = s.replace('assert.match(html, /Entire Parkway/);', 'assert.match(html, /Anywhere \/ I’m flexible/);')
+          if '/evidence used/' not in s:
+              s = s.replace('assert.match(html, /7 days from now/);', 'assert.match(html, /7 days from now/);\n  assert.match(html, /evidence used/);\n  assert.match(html, /Live camera views always show current conditions/);')
+          if '/visualRequest/' not in s:
+              s = s.replace('assert.match(html, /__personaDerived/);', 'assert.match(html, /__personaDerived/);\n  assert.match(html, /visualRequest/);')
+          p.write_text(s)
+          PY
+          rm -f .github/workflows/inspect-blue-ridge-ux.yml
+          rm -f .github/workflows/finalize-blue-ridge-persona-ux.yml
+          npm install --ignore-scripts --no-audit --no-fund
+          npm test
+      - name: Commit finalized UX
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/add-blue-ridge-persona-ux.mjs tests/blue-ridge-fall-color.test.js tests/blue-ridge-visual-verification.test.js tests/blue-ridge-persona-ux.test.js .github/workflows/inspect-blue-ridge-ux.yml .github/workflows/finalize-blue-ridge-persona-ux.yml
+          git commit -m "Finalize persona-first Blue Ridge UX"
+          git push origin HEAD:blue-ridge-persona-ux
