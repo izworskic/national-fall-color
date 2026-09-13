@@ -19,13 +19,17 @@ jobs:
           node scripts/add-blue-ridge-surface.mjs
           node scripts/add-blue-ridge-visual-verification.mjs
           node scripts/add-blue-ridge-persona-ux.mjs
-      - name: Remove persona transform from build pipeline
+      - name: Make build contract persona-aware
         run: |
           node - <<'NODE'
           const fs=require('fs');
           const p=JSON.parse(fs.readFileSync('package.json','utf8'));
           for (const k of ['vercel-build','test']) p.scripts[k]=p.scripts[k].replace(' && node scripts/add-blue-ridge-persona-ux.mjs','');
           fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');
+          const path='scripts/add-blue-ridge-surface.mjs';
+          let s=fs.readFileSync(path,'utf8');
+          s=s.replace('if (!builtBlueRidge.includes("evidence coverage")) throw new Error("Blue Ridge evidence-coverage label missing");','if (!builtBlueRidge.includes("evidence coverage") && !builtBlueRidge.includes("evidence used")) throw new Error("Blue Ridge evidence label missing");');
+          fs.writeFileSync(path,s);
           NODE
       - name: Verify materialized page without persona build transform
         run: |
@@ -36,7 +40,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/national-tools/fall-color/blue-ridge-parkway/index.html package.json
+          git add public/national-tools/fall-color/blue-ridge-parkway/index.html package.json scripts/add-blue-ridge-surface.mjs
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Materialize Blue Ridge persona UX [materialized]"
           git push
