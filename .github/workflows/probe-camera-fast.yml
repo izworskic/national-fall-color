@@ -1,19 +1,21 @@
-name: Inspect Blue Ridge production camera error
+name: Verify exact Blue Ridge camera URL
 on:
   push:
     branches: ["camera-probe-final"]
 permissions:
   contents: read
 jobs:
-  inspect:
+  verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Inspect live camera payload
+      - name: Verify exact page API URL
         shell: bash
         run: |
           set -euo pipefail
-          URL='https://national-fall-color.vercel.app/api/blue-ridge-visual-verification?lat=35.71&lon=-82.37&milepost=364.6&debug=1'
+          URL='https://national-fall-color.vercel.app/api/blue-ridge-visual-verification?lat=35.71&lon=-82.37&milepost=364.6'
           code=$(curl --max-time 25 -L -sS -o /tmp/visual.json -w '%{http_code}' "$URL")
           echo "HTTP=$code"
-          jq '{retrieved_at, automated_camera, nearby_count:(.nearby_cameras|length)}' /tmp/visual.json
+          jq '{retrieved_at, automated_camera:{available:.automated_camera.available,error:.automated_camera.error,source_strategy:.automated_camera.source_strategy,signal:.automated_camera.signal}, nearby_count:(.nearby_cameras|length)}' /tmp/visual.json
           test "$code" = "200"
+          jq -e '.automated_camera.available == true and .automated_camera.signal.available == true and .automated_camera.signal.latest_date >= "2026-09-11" and (.nearby_cameras|length) >= 1' /tmp/visual.json >/dev/null
+          echo 'EXACT_CAMERA_URL_OK=1'
