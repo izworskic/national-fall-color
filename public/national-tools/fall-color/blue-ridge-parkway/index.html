@@ -354,8 +354,8 @@
      $("visual-distance").textContent=Number.isFinite(dist)?Math.round(dist)+" MP":"—";
    }else{
      $("visual-stage").className="visual-stage loading";
-     $("visual-stage").textContent="CAMERA DATA UNAVAILABLE";
-     $("visual-loss").textContent="—";$("visual-trend").textContent="—";$("visual-date").textContent="—";$("visual-distance").textContent="—";
+     $("visual-stage").textContent="RESEARCH FEED DELAYED";
+     $("visual-loss").textContent="—";$("visual-trend").textContent="—";$("visual-date").textContent="Use live views";const fallbackDist=Math.abs(Number(best?.milepost)-Number(evidence?.camera?.milepost));$("visual-distance").textContent=Number.isFinite(fallbackDist)?Math.round(fallbackDist)+" MP":"—";
    }
    $("visual-reconcile").textContent=relation(best,visual);
    const sat=visual?.satellite;
