@@ -8,16 +8,14 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Inspect live API and PhenoCam
+      - name: Inspect direct PhenoCam summary
         shell: bash
         run: |
           set +e
-          echo '=== live API ==='
-          curl --max-time 25 -L -sS 'https://national-fall-color.vercel.app/api/blue-ridge-visual-verification?lat=35.71&lon=-82.37&milepost=364.6' -o /tmp/visual.json
-          echo "curl=$?"
-          if [ -s /tmp/visual.json ]; then jq '{retrieved_at, automated_camera, nearby_count:(.nearby_cameras|length), nearby_cameras, satellite}' /tmp/visual.json; fi
-          echo '=== ROI catalog ==='
-          curl --max-time 15 -L -sS -w '\nHTTP=%{http_code} time=%{time_total}\n' 'https://phenocam.nau.edu/api/roilists/?limit=10000' -o /tmp/roi.json
-          echo "curl=$? bytes=$(wc -c </tmp/roi.json 2>/dev/null || echo 0)"
-          if [ -s /tmp/roi.json ]; then jq '[.results[]? | select((.site // "")|ascii_downcase=="asuhighlands")][0:3]' /tmp/roi.json; fi
+          URL='https://phenocam.nau.edu/data/archive/asuhighlands/ROI/asuhighlands_DB_1000_3day.csv'
+          echo '=== direct summary ==='
+          curl --max-time 15 -L -sS -w '\nHTTP=%{http_code} time=%{time_total}\n' "$URL" -o /tmp/summary.csv
+          echo "curl=$? bytes=$(wc -c </tmp/summary.csv 2>/dev/null || echo 0)"
+          head -n 8 /tmp/summary.csv
+          tail -n 5 /tmp/summary.csv
           exit 0
