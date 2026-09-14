@@ -1,21 +1,25 @@
-name: Probe camera fast
+name: Verify Blue Ridge production camera fix
 on:
   push:
     branches: ["camera-probe-final"]
 permissions:
   contents: read
 jobs:
-  probe:
+  verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Inspect direct PhenoCam summary
+      - name: Verify live camera payload
         shell: bash
         run: |
-          set +e
-          URL='https://phenocam.nau.edu/data/archive/asuhighlands/ROI/asuhighlands_DB_1000_3day.csv'
-          echo '=== direct summary ==='
-          curl --max-time 15 -L -sS -w '\nHTTP=%{http_code} time=%{time_total}\n' "$URL" -o /tmp/summary.csv
-          echo "curl=$? bytes=$(wc -c </tmp/summary.csv 2>/dev/null || echo 0)"
-          head -n 8 /tmp/summary.csv
-          tail -n 5 /tmp/summary.csv
-          exit 0
+          set -euo pipefail
+          URL='https://national-fall-color.vercel.app/api/blue-ridge-visual-verification?lat=35.71&lon=-82.37&milepost=364.6'
+          code=$(curl --max-time 20 -L -sS -o /tmp/visual.json -w '%{http_code}' "$URL")
+          echo "HTTP=$code"
+          test "$code" = "200"
+          jq '{retrieved_at, automated_camera:{available:.automated_camera.available, source_strategy:.automated_camera.source_strategy, signal:.automated_camera.signal}, nearby_count:(.nearby_cameras|length)}' /tmp/visual.json
+          jq -e '.automated_camera.available == true' /tmp/visual.json >/dev/null
+          jq -e '.automated_camera.signal.available == true' /tmp/visual.json >/dev/null
+          jq -e '.automated_camera.source_strategy == "direct-known-roi-summary"' /tmp/visual.json >/dev/null
+          jq -e '.automated_camera.signal.latest_date >= "2026-09-11"' /tmp/visual.json >/dev/null
+          jq -e '(.nearby_cameras | length) >= 1' /tmp/visual.json >/dev/null
+          echo 'CAMERA_FIX_LIVE_OK=1'
