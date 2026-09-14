@@ -41,10 +41,17 @@ jobs:
             ' days past its historical midpoint. Favor lower elevations or treat the drive as a scenic trip rather than a foliage chase.':' days past its usual strongest color window. Lower elevations may have better remaining color.',
             'Historical window ':'Usual color window ',
             'AUTOMATED CAMERA DATA UNAVAILABLE':'CAMERA DATA UNAVAILABLE',
-            'Recent Sentinel-2 scene found':'Recent satellite coverage found'
+            'Recent Sentinel-2 scene found':'Recent satellite coverage found',
+            'A possible NPS closure overlaps this sampling point. Pick another stretch or confirm the official road status before leaving.':'A possible NPS closure overlaps this stop. Pick another stretch or confirm the official road status before leaving.',
+            'We do not have enough usual-timing history for this stop.':'We do not have enough history for this stop yet.'
           }
           for a,b in replacements.items():
               s=s.replace(a,b)
+          source_details='''<details class="technical-inline"><summary>Technical data sources</summary><p class="visual-fine">Timing uses USA-NPN satellite phenology; current leaf reports use USA-NPN Nature’s Notebook; weather comes from the National Weather Service; dryness comes from the U.S. Drought Monitor; camera trend data come from PhenoCam; satellite coverage checks use Sentinel-2; road access comes from the National Park Service.</p></details>'''
+          anchor='<p><a class="button-link" href="/national-tools/fall-color/">Check fall-color timing anywhere in the U.S.</a></p>'
+          if 'Technical data sources' not in s:
+              if anchor not in s: raise SystemExit('technical source insertion anchor missing')
+              s=s.replace(anchor,source_details+'\n'+anchor)
           p.write_text(s)
           PY
       - name: Verify
