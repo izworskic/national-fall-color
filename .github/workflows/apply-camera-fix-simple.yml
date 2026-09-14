@@ -1,0 +1,28 @@
+name: Run Blue Ridge camera fix
+on:
+  push:
+    branches: ["fix-blue-ridge-camera-data"]
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-blue-ridge-camera-data
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply and verify
+        shell: bash
+        run: |
+          if git log -1 --pretty=%B | grep -q '\[camera-fixed\]'; then exit 0; fi
+          python3 scripts/patch-blue-ridge-camera-fix.py
+          npm install --ignore-scripts --no-audit --no-fund
+          npm test
+          git config user.name "Chris Izworski"
+          git config user.email "46615230+izworskic@users.noreply.github.com"
+          git add api/blue-ridge-visual-verification.js public/national-tools/fall-color/blue-ridge-parkway/index.html tests/blue-ridge-visual-verification.test.js
+          git commit -m "Fix Blue Ridge camera data timeout [camera-fixed]"
+          git push origin HEAD:fix-blue-ridge-camera-data
