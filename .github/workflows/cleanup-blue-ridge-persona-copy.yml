@@ -1,0 +1,50 @@
+name: Clean Blue Ridge visitor copy
+on:
+  push:
+    branches: ["blue-ridge-real-map-persona-language"]
+permissions:
+  contents: write
+jobs:
+  cleanup:
+    if: ${{ !contains(github.event.head_commit.message, '[copy-clean]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Replace remaining scientist-facing loading copy
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('public/national-tools/fall-color/blue-ridge-parkway/index.html')
+          s=p.read_text()
+          repl={
+            'Comparing historical transition timing across the Parkway, then checking current observations, weather, drought and NPS road context.':'Finding the best color window for your part of the Parkway, then checking cameras, weather and roads.',
+            'Calculating the Parkway stretch represented by this sampling anchor…':'Finding the best stretch to drive…',
+            'Loading timing evidence…':'Checking when this elevation usually has its best color…',
+            'Checking current evidence independently…':'Checking current leaf reports and cameras…',
+            'Checking weather and drought stress…':'Checking weather that could help or hurt the show…',
+            'Checking PhenoCam…':'Checking research camera…',
+            'Loading current canopy signal':'Checking current leaf change',
+            'Looking for a recent low-to-moderate-cloud acquisition near the current modeled drive.':'Checking whether recent satellite coverage is available near this drive.',
+            'No Blue Ridge corridor recommendation was returned':'No Blue Ridge fall-color recommendation was returned',
+            'Live corridor data is temporarily unavailable':'Fall-color data is temporarily unavailable',
+            'The tool will not substitute a made-up recommendation. Use the NPS fall-color and road-status links below, then check back for the data-driven corridor comparison.':'We cannot give you a reliable color recommendation right now. Check the live cameras and NPS road status below, then try again.'
+          }
+          for a,b in repl.items(): s=s.replace(a,b)
+          p.write_text(s)
+          PY
+      - name: Verify
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm test
+          npm run vercel-build
+      - name: Commit copy cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/national-tools/fall-color/blue-ridge-parkway/index.html
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Finish Blue Ridge visitor-facing copy [copy-clean]"
+          git push
