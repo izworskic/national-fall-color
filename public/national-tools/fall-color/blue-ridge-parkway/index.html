@@ -75,15 +75,15 @@
 <div id="decision-scope-label" class="decision-label">Best drive across the entire Parkway today</div>
 <div id="trip-verdict" class="trip-verdict watch"><span id="trip-verdict-label">CHECKING</span><strong id="trip-verdict-headline">Is a foliage-specific drive worth it yet?</strong></div>
 <div id="best-name" class="decision-place skeleton">Loading Blue Ridge timing…</div>
-<p id="best-read" class="decision-read">Comparing historical transition timing across the Parkway, then checking current observations, weather, drought and NPS road context.</p>
+<p id="best-read" class="decision-read">Finding the best color window for your part of the Parkway, then checking cameras, weather and roads.</p>
 <div class="decision-grid">
 <div class="metric"><strong id="best-window">—</strong><span>usual color window</span></div>
 <div class="metric"><strong id="best-elevation">—</strong><span>elevation</span></div>
 <div class="metric"><strong id="best-confidence">—</strong><span>what this call uses</span></div>
 <div class="metric"><strong id="best-road">—</strong><span>road check</span></div>
 </div>
-<p id="drive-segment" class="decision-note">Calculating the Parkway stretch represented by this sampling anchor…</p>
-<div class="why"><h2>Why this drive</h2><p id="why-timing">Loading timing evidence…</p><p id="why-current">Checking current evidence independently…</p><p id="why-quality">Checking weather and drought stress…</p></div>
+<p id="drive-segment" class="decision-note">Finding the best stretch to drive…</p>
+<div class="why"><h2>Why this drive</h2><p id="why-timing">Checking when this elevation usually has its best color…</p><p id="why-current">Checking current leaf reports and cameras…</p><p id="why-quality">Checking weather that could help or hurt the show…</p></div>
 <div id="updated" class="updated"></div>
 <div class="decision-actions" data-decision-actions="true"><a class="button-link secondary camera-jump" href="#live-cameras">See live cameras</a><a class="button-link" href="https://www.nps.gov/blri/planyourvisit/roadclosures.htm" target="_blank" rel="noopener">Check official Parkway road status</a><a class="button-link secondary" href="https://www.nps.gov/blri/learn/nature/fall-colors.htm" target="_blank" rel="noopener">NPS fall-color guidance</a></div>
 </div>
@@ -96,8 +96,8 @@
 <div class="visual-grid">
 <article class="panel visual-primary">
 <div class="visual-kicker">Research camera near this drive</div>
-<h3 id="visual-camera-name">Checking PhenoCam…</h3>
-<div id="visual-stage" class="visual-stage loading">Loading current canopy signal</div>
+<h3 id="visual-camera-name">Checking research camera…</h3>
+<div id="visual-stage" class="visual-stage loading">Checking current leaf change</div>
 <div class="visual-metrics">
 <div><strong id="visual-loss">—</strong><span>change from summer</span></div>
 <div><strong id="visual-trend">—</strong><span>change this week</span></div>
@@ -110,7 +110,7 @@
 <details class="technical-details"><summary>Technical: satellite coverage</summary><div class="panel satellite-panel">
 <div class="visual-kicker">Satellite cross-check</div>
 <h3 id="satellite-head">Checking latest Sentinel-2 pass…</h3>
-<p id="satellite-detail">Looking for a recent low-to-moderate-cloud acquisition near the current modeled drive.</p>
+<p id="satellite-detail">Checking whether recent satellite coverage is available near this drive.</p>
 <p class="visual-fine">For now this is acquisition/freshness metadata only. Satellite pixels do not change the foliage recommendation until spectral processing is calibrated against camera evidence.</p>
 </div></details>
 </div>
@@ -267,7 +267,7 @@
   window.__blueRidgeDecision=data;
   window.dispatchEvent(new CustomEvent("blue-ridge-decision-ready",{detail:data}));
   const best=data.decision?.best_now, next=data.decision?.best_next_7d;
-  if(!best)throw new Error("No Blue Ridge corridor recommendation was returned");
+  if(!best)throw new Error("No Blue Ridge fall-color recommendation was returned");
   const current=contextFor(data,best);
   const verdict=tripVerdict(best);
   $("trip-verdict").className="trip-verdict "+verdict.level;
@@ -302,7 +302,7 @@
  }
  async function run(){
   try{const response=await fetch("https://national-fall-color.vercel.app/api/blue-ridge-fall-color");const data=await response.json();if(!response.ok)throw new Error(data.error||"Blue Ridge fall-color data unavailable");render(data)}
-  catch(error){const card=$("decision-card");card.classList.add("error");$("best-name").classList.remove("skeleton");$("best-name").textContent="Live corridor data is temporarily unavailable";$("best-read").textContent="The tool will not substitute a made-up recommendation. Use the NPS fall-color and road-status links below, then check back for the data-driven corridor comparison.";$("updated").textContent=String(error?.message||error)}
+  catch(error){const card=$("decision-card");card.classList.add("error");$("best-name").classList.remove("skeleton");$("best-name").textContent="Fall-color data is temporarily unavailable";$("best-read").textContent="We cannot give you a reliable color recommendation right now. Check the live cameras and NPS road status below, then try again.";$("updated").textContent=String(error?.message||error)}
  }
  run();
 })();
