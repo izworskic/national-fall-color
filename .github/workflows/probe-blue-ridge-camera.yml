@@ -1,0 +1,21 @@
+name: Probe Blue Ridge camera payload
+on:
+  push:
+    branches: ["probe-blue-ridge-camera-data"]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe live visual payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -L -sS 'https://national-fall-color.vercel.app/api/blue-ridge-visual-verification?lat=35.71&lon=-82.37&milepost=364.6' -o /tmp/visual.json
+          echo '=== visual payload ==='
+          jq '{retrieved_at, automated_camera, nearby_cameras, satellite}' /tmp/visual.json
+          echo '=== phenocam rois status ==='
+          curl -L -sS -D /tmp/roi.headers -o /tmp/roi.json 'https://phenocam.nau.edu/api/roilists/?limit=10000'
+          head -n 20 /tmp/roi.headers
+          jq '[.results[]? | select((.site // "")|ascii_downcase=="asuhighlands")][0:5]' /tmp/roi.json || head -c 3000 /tmp/roi.json
