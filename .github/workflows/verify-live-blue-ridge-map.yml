@@ -1,0 +1,25 @@
+name: Verify live Blue Ridge map upgrade
+on:
+  push:
+    branches: ["diagnose-vercel-persona-deploy"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe public canonical map experience
+        run: |
+          set -euo pipefail
+          URL='https://chrisizworski.com/national-tools/fall-color/blue-ridge-parkway/?map_verify=9288ae75'
+          code=$(curl -L -sS -o /tmp/page.html -w '%{http_code}' "$URL")
+          echo "HTTP=$code"
+          test "$code" = "200"
+          grep -F 'id="parkway-map"' /tmp/page.html
+          grep -F 'Where the color is along the Parkway' /tmp/page.html
+          grep -F 'leaflet@1.9.4/dist/leaflet.js' /tmp/page.html
+          grep -F 'tile.openstreetmap.org' /tmp/page.html
+          grep -F 'Mostly green' /tmp/page.html
+          grep -F 'Best color window' /tmp/page.html
+          grep -F 'What people are seeing' /tmp/page.html
+          grep -F 'Weather that could knock leaves down' /tmp/page.html
+          if grep -F '<svg id="profile"' /tmp/page.html; then echo 'OLD_PROFILE_PRESENT=1'; exit 1; fi
+          echo 'LIVE_MAP_PERSONA_OK=1'
