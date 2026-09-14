@@ -126,7 +126,7 @@
 <div class="panel"><div class="eyebrow">Best drive today</div><h3 id="now-next-name">—</h3><p id="now-next-detail">—</p></div>
 <div class="panel"><div class="eyebrow">Best drive in 7 days</div><h3 id="seven-name">—</h3><p id="seven-detail">—</p></div>
 </div>
-<div class="callout"><strong>Elevation movement:</strong> <span id="elevation-story">Loading…</span></div>
+<div class="callout"><strong>Where color may move next:</strong> <span id="elevation-story">Loading…</span></div>
 </div></section>
 
 <section id="parkway-map-section" class="section"><div class="wrap">
@@ -151,9 +151,9 @@
 <h2>What could change the color</h2>
 <p class="section-intro">These are the things that can make the leaves look better or worse than the calendar suggests.</p>
 <div class="context-grid">
-<div class="context"><h3>What people are seeing</h3><p id="obs-context">Loading USA-NPN observations…</p></div>
-<div class="context"><h3>Weather that could knock leaves down</h3><p id="weather-context">Loading NWS context…</p></div>
-<div class="context"><h3>Dryness that can dull color</h3><p id="drought-context">Loading U.S. Drought Monitor context…</p></div>
+<div class="context"><h3>What people are seeing</h3><p id="obs-context">Checking recent leaf reports…</p></div>
+<div class="context"><h3>Weather that could knock leaves down</h3><p id="weather-context">Checking the next 7 days of weather…</p></div>
+<div class="context"><h3>Dryness that can dull color</h3><p id="drought-context">Checking how dry conditions have been…</p></div>
 </div>
 </div></section>
 
@@ -167,6 +167,7 @@
 </div>
 <div class="callout"><strong>Why the map moves:</strong> The Parkway runs nearly 470 miles and climbs through huge elevation changes. Higher ridges usually turn first, then the better color tends to move lower as the season goes on. <a href="https://www.nps.gov/blri/learn/nature/fall-colors.htm">NPS fall color guidance</a>.</div>
 <div class="callout"><strong>Before you leave:</strong> <a href="https://www.nps.gov/blri/planyourvisit/roadclosures.htm">Check official Blue Ridge Parkway road status</a>. Weather, construction and storm recovery can close sections even when foliage timing is favorable.</div>
+<details class="technical-inline"><summary>Technical data sources</summary><p class="visual-fine">Timing uses USA-NPN satellite phenology; current leaf reports use USA-NPN Nature’s Notebook; weather comes from the National Weather Service; dryness comes from the U.S. Drought Monitor; camera trend data come from PhenoCam; satellite coverage checks use Sentinel-2; road access comes from the National Park Service.</p></details>
 <p><a class="button-link" href="/national-tools/fall-color/">Check fall-color timing anywhere in the U.S.</a></p>
 </div></section>
 
@@ -253,15 +254,15 @@
  function tripVerdict(best){
   const d=Number(best?.timing?.days_from_midpoint);
   const stage=best?.timing?.stage||"historical timing available";
-  const place=best?.name||"the best sampled anchor";
+  const place=best?.name||"the best Parkway stop";
   const corridor=best?.corridor||"Blue Ridge Parkway";
-  if(best?.road?.possible_closure)return{level:"blocked",label:"ROAD ISSUE",headline:"Do not route here until NPS confirms access",detail:place+" is the strongest timing match, but a possible NPS closure overlaps this anchor. Treat road access as the deciding factor before a foliage trip."};
-  if(!Number.isFinite(d))return{level:"watch",label:"WATCH",headline:"Timing confidence is limited",detail:corridor+": "+stage+". This is the strongest sampled match, not proof of peak color."};
-  if(d < -21)return{level:"early",label:"TOO EARLY",headline:"Do not make a foliage-only trip yet",detail:place+" is the best sampled anchor today, but it is still "+Math.abs(Math.round(d))+" days before its historical mid-transition. If you are already on the Parkway, this is the best direction to try; otherwise wait."};
-  if(d < -8)return{level:"watch",label:"WATCH",headline:"The season is approaching",detail:place+" is the strongest sampled bet, about "+Math.abs(Math.round(d))+" days before its historical mid-transition. A dedicated color trip is becoming reasonable, but this is not a peak-color claim."};
-  if(d <= 7)return{level:"go",label:"GO",headline:"Strong historical color window",detail:place+" is inside its strongest historical transition window. Current observations and weather still determine how vivid the drive looks on the ground."};
-  if(d <= 18)return{level:"soon",label:"GO SOON",headline:"Late side of the typical transition",detail:place+" is still the strongest sampled option, but it is "+Math.round(d)+" days past its historical midpoint. Wind and leaf drop matter more now, so do not delay solely for a better modeled date."};
-  return{level:"late",label:"LATE",headline:"Do not confuse “best available” with peak",detail:place+" is the strongest remaining sampled option, but this anchor is "+Math.round(d)+" days past its historical midpoint. Favor lower elevations or treat the drive as a scenic trip rather than a foliage chase."};
+  if(best?.road?.possible_closure)return{level:"blocked",label:"ROAD ISSUE",headline:"Do not route here until NPS confirms access",detail:place+" is the strongest timing match, but a possible NPS closure overlaps this stop. Check road access before making the drive."};
+  if(!Number.isFinite(d))return{level:"watch",label:"WATCH",headline:"Timing confidence is limited",detail:corridor+": "+stage+". This is the best available timing match, but check a live camera before making a long drive."};
+  if(d < -21)return{level:"early",label:"TOO EARLY",headline:"Do not make a foliage-only trip yet",detail:place+" is the best bet today, but it is still "+Math.abs(Math.round(d))+" days before color usually gets strongest at this elevation. If you are already on the Parkway, this is the best direction to try; otherwise wait."};
+  if(d < -8)return{level:"watch",label:"WATCH",headline:"The season is approaching",detail:place+" is the best bet, about "+Math.abs(Math.round(d))+" days before the stronger color window usually arrives. A dedicated color trip is getting closer."};
+  if(d <= 7)return{level:"go",label:"GO",headline:"Good time to chase color",detail:place+" lines up with its usual strong color window. Check the cameras to see how it actually looks before you leave."};
+  if(d <= 18)return{level:"soon",label:"GO SOON",headline:"Still worth a look — do not wait too long",detail:place+" is still the best bet, but it is "+Math.round(d)+" days past its usual strongest color window. Wind and leaf drop matter more now, so do not wait too long."};
+  return{level:"late",label:"LATE",headline:"Higher-elevation color is likely fading",detail:place+" is the best remaining bet, but this stop is "+Math.round(d)+" days past its usual strongest color window. Lower elevations may have better remaining color."};
  }
  function render(data){
   window.__blueRidgeDecision=data;
@@ -291,9 +292,9 @@
   const roadStamp=data.decision?.road_status_updated?` · NPS road page dated ${data.decision.road_status_updated}`:" · NPS road date unavailable";
   $("updated").textContent=`Outlook updated ${new Date(data.retrieved_at).toLocaleString()} · Parkway date ${data.local_date}${roadStamp}.`;
   $("now-next-name").textContent=`${best.name} · ${Number(best.elevation_ft).toLocaleString()} ft`;
-  $("now-next-detail").textContent=`${best.corridor}, MP ${best.milepost}. Historical window ${windowText(best)}.`;
+  $("now-next-detail").textContent=`${best.corridor}, MP ${best.milepost}. Usual color window ${windowText(best)}.`;
   $("seven-name").textContent=next?`${next.name} · ${Number(next.elevation_ft).toLocaleString()} ft`:"Unavailable";
-  $("seven-detail").textContent=next?`${next.corridor}, MP ${next.milepost}. Historical window ${windowText(next)}.`:"Not enough data for a +7-day comparison.";
+  $("seven-detail").textContent=next?`${next.corridor}, MP ${next.milepost}. Usual color window ${windowText(next)}.`:"Not enough data for a +7-day comparison.";
   $("elevation-story").textContent=data.decision?.elevation_story||"No elevation comparison available.";
   $("obs-context").textContent=obs?.available?`${obs.interpretation} Latest nearby report: ${obs.latest_observation_date?fmtDate(obs.latest_observation_date):'date unavailable'}.`:"Current leaf reports are unavailable right now.";
   $("weather-context").textContent=weather?.available?`Next 7 days: ${weather.min_7d_f}–${weather.max_7d_f}°F, winds up to ${weather.max_wind_mph??'—'} mph and rain chances up to ${weather.max_precip_probability??'—'}%. ${weather.quality_note}`:"Weather detail is unavailable right now.";
@@ -353,13 +354,13 @@
      $("visual-distance").textContent=Number.isFinite(dist)?Math.round(dist)+" MP":"—";
    }else{
      $("visual-stage").className="visual-stage loading";
-     $("visual-stage").textContent="AUTOMATED CAMERA DATA UNAVAILABLE";
+     $("visual-stage").textContent="CAMERA DATA UNAVAILABLE";
      $("visual-loss").textContent="—";$("visual-trend").textContent="—";$("visual-date").textContent="—";$("visual-distance").textContent="—";
    }
    $("visual-reconcile").textContent=relation(best,visual);
    const sat=visual?.satellite;
    if(sat?.available&&sat?.scene_found){
-     $("satellite-head").textContent="Recent Sentinel-2 scene found";
+     $("satellite-head").textContent="Recent satellite coverage found";
      const acquired=sat.acquired_at?new Date(sat.acquired_at).toLocaleDateString([],{month:"short",day:"numeric"}):"date unavailable";
      const cloud=Number.isFinite(Number(sat.cloud_cover_percent))?" · "+Math.round(Number(sat.cloud_cover_percent))+"% scene cloud":"";
      $("satellite-detail").textContent=acquired+cloud+". This confirms recent satellite coverage near the current drive, but spectral foliage analysis is not enabled yet.";
@@ -418,8 +419,8 @@
  function scoped(){const all=Array.isArray(data?.corridor)?data.corridor:[];const ids=groups[focus];return ids?all.filter(x=>ids.includes(x.id)):all}
  function pick(offset){return scoped().slice().sort((a,b)=>scoreFor(b,offset)-scoreFor(a,offset))[0]||null}
  function drive(best){const all=(data?.corridor||[]).slice().sort((a,b)=>Number(a.milepost)-Number(b.milepost));const i=all.findIndex(x=>x.id===best?.id);if(i<0)return null;const mp=Number(all[i].milepost),prev=i>0?Number(all[i-1].milepost):null,next=i<all.length-1?Number(all[i+1].milepost):null;return{start:Math.round(Math.max(0,Number.isFinite(prev)?(prev+mp)/2:mp-25)),end:Math.round(Math.min(469,Number.isFinite(next)?(mp+next)/2:mp+25))}}
- function verdict(best,offset){const base=Number(best?.timing?.days_from_midpoint);const diff=base+offset;const when=offset?"seven days from now":"today";if(best?.road?.possible_closure)return{level:"blocked",label:"ROAD ISSUE",headline:"Check NPS access before choosing this stretch",detail:"A possible NPS closure overlaps this sampling point. Pick another stretch or confirm the official road status before leaving."};if(!Number.isFinite(diff))return{level:"watch",label:"CHECK",headline:"Not enough timing data for a strong call",detail:"Use the live cameras and official road status before making a foliage-specific drive."};if(diff<-21)return{level:"early",label:"WAIT",headline:"Mostly green — give it more time",detail:best.name+" is the best bet near "+labels[focus]+", but "+when+" this elevation is usually still well ahead of its stronger color window."};if(diff<-8)return{level:"watch",label:"WATCH",headline:"Color is starting to get closer",detail:best.name+" is the best bet near "+labels[focus]+" "+when+", but the stronger color window is usually still about "+Math.abs(Math.round(diff))+" days away."};if(diff<=7)return{level:"go",label:"GO",headline:"Good time to chase color",detail:best.name+" lines up with the time of year this elevation usually shows its strongest fall change. Check the cameras before a long drive."};if(diff<=18)return{level:"soon",label:"GO SOON",headline:"Still worth a look — do not wait too long",detail:best.name+" is on the late side now. Wind and leaf drop could shorten the remaining color window."};return{level:"late",label:"LATE",headline:"Higher-elevation color is likely fading",detail:best.name+" is still the best bet near "+labels[focus]+", but lower elevations may have better remaining color."}}
- function timingText(best,offset){const base=Number(best?.timing?.days_from_midpoint);if(!Number.isFinite(base))return "We do not have enough usual-timing history for this stop.";const diff=base+offset;if(Math.abs(diff)<=2)return "This date lines up closely with when this elevation usually makes its strongest fall change.";return diff<0?"This date is about "+Math.abs(Math.round(diff))+" days before color usually gets strongest at this elevation.":"This date is about "+Math.round(diff)+" days after this elevation’s usual strongest fall-change window."}
+ function verdict(best,offset){const base=Number(best?.timing?.days_from_midpoint);const diff=base+offset;const when=offset?"seven days from now":"today";if(best?.road?.possible_closure)return{level:"blocked",label:"ROAD ISSUE",headline:"Check NPS access before choosing this stretch",detail:"A possible NPS closure overlaps this stop. Pick another stretch or confirm the official road status before leaving."};if(!Number.isFinite(diff))return{level:"watch",label:"CHECK",headline:"Not enough timing data for a strong call",detail:"Use the live cameras and official road status before making a foliage-specific drive."};if(diff<-21)return{level:"early",label:"WAIT",headline:"Mostly green — give it more time",detail:best.name+" is the best bet near "+labels[focus]+", but "+when+" this elevation is usually still well ahead of its stronger color window."};if(diff<-8)return{level:"watch",label:"WATCH",headline:"Color is starting to get closer",detail:best.name+" is the best bet near "+labels[focus]+" "+when+", but the stronger color window is usually still about "+Math.abs(Math.round(diff))+" days away."};if(diff<=7)return{level:"go",label:"GO",headline:"Good time to chase color",detail:best.name+" lines up with the time of year this elevation usually shows its strongest fall change. Check the cameras before a long drive."};if(diff<=18)return{level:"soon",label:"GO SOON",headline:"Still worth a look — do not wait too long",detail:best.name+" is on the late side now. Wind and leaf drop could shorten the remaining color window."};return{level:"late",label:"LATE",headline:"Higher-elevation color is likely fading",detail:best.name+" is still the best bet near "+labels[focus]+", but lower elevations may have better remaining color."}}
+ function timingText(best,offset){const base=Number(best?.timing?.days_from_midpoint);if(!Number.isFinite(base))return "We do not have enough history for this stop yet.";const diff=base+offset;if(Math.abs(diff)<=2)return "This date lines up closely with when this elevation usually makes its strongest fall change.";return diff<0?"This date is about "+Math.abs(Math.round(diff))+" days before color usually gets strongest at this elevation.":"This date is about "+Math.round(diff)+" days after this elevation’s usual strongest fall-change window."}
  function depth(best,offset){const original=offset?data?.decision?.best_next_7d:data?.decision?.best_now;return original?.id===best?.id?"Timing + live checks":"Timing + road check"}
  function setPressed(){document.querySelectorAll("[data-focus]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.focus===focus)));document.querySelectorAll("[data-horizon]").forEach(b=>b.setAttribute("aria-pressed",String(Number(b.dataset.horizon)===horizon)))}
  function nextDetail(best,offset){if(!best)return "—";const diff=Number(best?.timing?.days_from_midpoint)+offset;return "MP "+best.milepost+" · "+Number(best.elevation_ft||0).toLocaleString()+" ft · "+stageFor(diff)}
