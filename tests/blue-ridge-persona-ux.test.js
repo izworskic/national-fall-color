@@ -16,10 +16,10 @@ test('Blue Ridge first-screen planner is organized around visitor decisions', ()
   assert.match(html, /Waynesville \/ Cherokee/);
   assert.match(html, /Today/);
   assert.match(html, /7 days from now/);
-  assert.match(html, /evidence used/);
+  assert.match(html, /what this call uses/);
   assert.match(html, /Live camera views always show current conditions/);
   assert.match(html, /Best drive near/);
-  assert.match(html, /Aim for /);
+  assert.match(html, /Start around /);
 });
 
 test('Blue Ridge visual evidence is phrased for visitors before technical detail', () => {
@@ -27,18 +27,21 @@ test('Blue Ridge visual evidence is phrased for visitors before technical detail
   assert.match(html, /current camera checks/);
   assert.match(html, /See what the leaves look like before you drive/);
   assert.match(html, /See live cameras/);
-  assert.match(html, /change from summer green/);
-  assert.match(html, /7-day canopy trend/);
+  assert.match(html, /change from summer/);
+  assert.match(html, /change this week/);
   assert.match(html, /What is this camera signal\?/);
-  assert.match(html, /Satellite coverage and technical cross-check/);
+  assert.match(html, /Technical: satellite coverage/);
   assert.match(html, /id="live-cameras"/);
+  assert.match(html, /research camera broadly agrees|live-view links/i);
 });
 
-test('Blue Ridge persona selection can refresh visual verification', () => {
+test('Blue Ridge persona selection refreshes map and visual verification', () => {
   const html = fs.readFileSync(pagePath, 'utf8');
   assert.doesNotMatch(html, /blue-ridge-decision-ready",event=>load\(event\.detail\),\{once:true\}/);
   assert.match(html, /__personaDerived/);
   assert.match(html, /visualRequest/);
+  assert.match(html, /__renderBlueRidgeMap/);
+  assert.match(html, /__renderBlueRidgeCorridor/);
   assert.match(html, /new CustomEvent\("blue-ridge-decision-ready"/);
 });
 
@@ -51,9 +54,9 @@ test('Blue Ridge persona application script parses as JavaScript', () => {
 
 test('technical evidence remains available without leading the experience', () => {
   const html = fs.readFileSync(pagePath, 'utf8');
-  assert.match(html, /More evidence behind the Parkway-wide model/);
-  assert.match(html, /How this works, if you want the details/);
+  assert.match(html, /What could change the color/);
+  assert.match(html, /How we make the call/);
   assert.match(html, /GCC/);
   assert.match(html, /Sentinel-2/);
-  assert.match(html, /U\.S\. Drought Monitor/);
+  assert.match(html, /U\.S\. Drought Monitor|Drought Monitor/);
 });

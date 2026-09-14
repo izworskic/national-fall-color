@@ -64,10 +64,10 @@ test("Blue Ridge page contains visual verification, rights boundary and satellit
   const html = fs.readFileSync(pagePath, "utf8");
   assert.match(html, /data-visual-verification="true"/);
   assert.match(html, /See what the leaves look like before you drive/);
-  assert.match(html, /machine-analyzed PhenoCam/i);
+  assert.match(html, /research camera tracks canopy greenness/i);
   assert.match(html, /link to the source rather than republishing third-party feeds/i);
   assert.match(html, /What is this camera signal\?/);
-  assert.match(html, /Satellite coverage and technical cross-check/);
+  assert.match(html, /Technical: satellite coverage/);
   assert.match(html, /Satellite cross-check/);
   assert.match(html, /does not change the foliage recommendation until spectral processing|do not change the foliage recommendation|spectral foliage analysis is not enabled yet/i);
   assert.match(html, /api\/blue-ridge-visual-verification/);

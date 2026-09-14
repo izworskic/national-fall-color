@@ -53,7 +53,7 @@ test("U.S. Drought Monitor categories are explicit stress labels", () => {
   assert.equal(engine.droughtLabel(9), null);
 });
 
-test("Blue Ridge page is a distinct indexable corridor decision surface", () => {
+test("Blue Ridge page is a distinct indexable visitor decision surface", () => {
   const html = fs.readFileSync(pagePath, "utf8");
   assert.match(html, /<title>Blue Ridge Parkway Fall Colors 2026: Best Drive Now/);
   assert.ok(html.includes('<link rel="canonical" href="https://chrisizworski.com/national-tools/fall-color/blue-ridge-parkway/">'));
@@ -61,19 +61,18 @@ test("Blue Ridge page is a distinct indexable corridor decision surface", () => 
   assert.match(html, /trip-verdict/);
   assert.match(html, /Where will you be driving\?/);
   assert.match(html, /Anywhere \/ I’m flexible/);
-  assert.match(html, /Do not make a foliage-only trip yet/);
-  assert.match(html, /Strong historical color window/);
-  assert.match(html, /Do not confuse “best available” with peak/);
-  assert.match(html, /Suggested sampling corridor/);
-  assert.match(html, /not a claim that color is uniform across every mile/);
-  assert.match(html, /evidence used/);
-  assert.match(html, /Elevation can differ sharply inside that radius/);
+  assert.match(html, /Mostly green — give it more time/);
+  assert.match(html, /Good time to chase color/);
+  assert.match(html, /Start around /);
+  assert.match(html, /what this call uses/);
   assert.match(html, /If you can wait a week/);
-  assert.match(html, /Compare the whole Parkway/);
+  assert.match(html, /Where the color is along the Parkway/);
+  assert.match(html, /parkway-map/);
   assert.match(html, /api\/blue-ridge-fall-color/);
   assert.match(html, /Check official Parkway road status/);
   assert.match(html, /NPS fall-color guidance/);
-  assert.match(html, /not a measured percent-peak map|No\. It is a decision engine/i);
+  assert.match(html, /Pin colors are the timing outlook/);
+  assert.match(html, /not a live camera reading/);
 });
 
 test("inline Blue Ridge application script parses as JavaScript", () => {
