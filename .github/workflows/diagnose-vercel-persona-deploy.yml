@@ -8,7 +8,7 @@ jobs:
   verify-live:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe canonical and upstream
+      - name: Probe live tool
         shell: bash
         run: |
           set -euo pipefail
@@ -23,7 +23,17 @@ jobs:
             grep -F 'Anywhere / I’m flexible' /tmp/page.html
             grep -F '7 days from now' /tmp/page.html
             grep -F 'See what the leaves look like before you drive' /tmp/page.html
-            grep -F 'Check NPS road status' /tmp/page.html
-            grep -F 'blue-ridge-map' /tmp/page.html
-            grep -F 'Best drive' /tmp/page.html
+            grep -F 'NPS road status before you leave' /tmp/page.html
+            grep -F 'id="parkway-map"' /tmp/page.html
+            grep -F 'Best color window' /tmp/page.html
           done
+          for api in \
+            'https://national-fall-color.vercel.app/api/blue-ridge-fall-color' \
+            'https://national-fall-color.vercel.app/api/blue-ridge-visual-verification'; do
+            echo "=== $api ==="
+            code=$(curl -L -sS -o /tmp/api.json -w '%{http_code}' "$api")
+            echo "HTTP $code"
+            test "$code" = "200"
+            test -s /tmp/api.json
+          done
+          echo 'BLUE_RIDGE_LIVE_OK=1'
