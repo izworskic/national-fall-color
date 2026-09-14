@@ -6,7 +6,7 @@ permissions:
   contents: write
 jobs:
   apply:
-    if: ${{ !contains(github.event.head_commit.message, '[camera-fixed]') }}
+    if: "${{ !contains(github.event.head_commit.message, '[camera-fixed]') }}"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
