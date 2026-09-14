@@ -80,3 +80,20 @@ test("visual verification client script parses as JavaScript", () => {
   assert.ok(match, "visual verification client script not found");
   assert.doesNotThrow(() => new Function(match[1]));
 });
+
+
+test("automated PhenoCam lookup uses the direct known ROI summary instead of the full ROI catalog", () => {
+  const source = fs.readFileSync(path.join(__dirname, "..", "api/blue-ridge-visual-verification.js"), "utf8");
+  assert.match(source, /asuhighlands_DB_1000_3day\.csv/);
+  assert.match(source, /asuhighlands_DB_1000_1day\.csv/);
+  assert.doesNotMatch(source, /api\/roilists\/\?limit=10000/);
+  assert.match(source, /direct-known-roi-summary/);
+});
+
+test("camera UI distinguishes a delayed research feed from nearby live camera availability", () => {
+  const html = fs.readFileSync(pagePath, "utf8");
+  assert.match(html, /RESEARCH FEED DELAYED/);
+  assert.doesNotMatch(html, /CAMERA DATA UNAVAILABLE/);
+  assert.match(html, /Use live views/);
+  assert.match(html, /nearby_cameras/);
+});

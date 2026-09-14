@@ -1,7 +1,9 @@
 const { CAMERAS, SOURCE_GUIDE, nearestCameras } = require("../lib/blue-ridge-camera-registry.js");
 
-const PHENOCAM_ROIS = "https://phenocam.nau.edu/api/roilists/?limit=10000";
 const PHENOCAM_SITE = "asuhighlands";
+const PHENOCAM_PRIMARY_SUMMARY = "https://phenocam.nau.edu/data/archive/asuhighlands/ROI/asuhighlands_DB_1000_3day.csv";
+const PHENOCAM_FALLBACK_SUMMARY = "https://phenocam.nau.edu/data/archive/asuhighlands/ROI/asuhighlands_DB_1000_1day.csv";
+const PHENOCAM_ROI_NAME = "asuhighlands_DB_1000";
 const COPERNICUS_STAC = "https://stac.dataspace.copernicus.eu/v1/search";
 const UA = "ChrisIzworskiFallColorVisualVerification/1.0 (+https://chrisizworski.com/national-tools/fall-color/blue-ridge-parkway/)";
 
@@ -191,47 +193,51 @@ function chooseRoi(payload, site = PHENOCAM_SITE) {
 
 async function phenocamEvidence(now = new Date()) {
   const camera = CAMERAS.find((entry) => entry.phenocam_site === PHENOCAM_SITE);
-  try {
-    const roiPayload = await fetchJson(PHENOCAM_ROIS);
-    const roi = chooseRoi(roiPayload, PHENOCAM_SITE);
-    if (!roi) throw new Error("No usable ASU Highlands PhenoCam ROI found");
-    const summaryUrl = absoluteUrl(roi.three_day_summary || roi.one_day_summary || roi.roi_stats_file);
-    if (!summaryUrl) throw new Error("PhenoCam ROI has no usable summary URL");
-    const csv = await fetchText(summaryUrl);
-    const signal = deriveGccSignal(parseCsv(csv), now);
-    return {
-      available: signal.available,
-      camera: {
-        id: camera.id,
-        name: camera.name,
-        milepost: camera.milepost,
-        state: camera.state,
-        source: camera.source,
-        source_url: camera.url,
-        site: PHENOCAM_SITE,
-        roi: roi.roi_name || null,
-        vegetation_type: roi.roitype || null,
-      },
-      signal,
-      data_url: summaryUrl,
-      rights: "Derived PhenoCam GCC data only. This endpoint does not republish camera imagery.",
-    };
-  } catch (error) {
-    return {
-      available: false,
-      camera: camera ? {
-        id: camera.id,
-        name: camera.name,
-        milepost: camera.milepost,
-        state: camera.state,
-        source: camera.source,
-        source_url: camera.url,
-        site: PHENOCAM_SITE,
-      } : null,
-      error: String(error?.message || error),
-      rights: "No third-party camera imagery is republished.",
-    };
+  const summaries = [PHENOCAM_PRIMARY_SUMMARY, PHENOCAM_FALLBACK_SUMMARY];
+  let lastError = null;
+  for (const summaryUrl of summaries) {
+    try {
+      const csv = await fetchText(summaryUrl, { signal: AbortSignal.timeout(5000) });
+      const signal = deriveGccSignal(parseCsv(csv), now);
+      if (!signal.available) throw new Error(signal.reason || "PhenoCam summary had no usable GCC data");
+      return {
+        available: true,
+        camera: {
+          id: camera.id,
+          name: camera.name,
+          milepost: camera.milepost,
+          state: camera.state,
+          source: camera.source,
+          source_url: camera.url,
+          site: PHENOCAM_SITE,
+          roi: PHENOCAM_ROI_NAME,
+          vegetation_type: "DB",
+        },
+        signal,
+        data_url: summaryUrl,
+        source_strategy: "direct-known-roi-summary",
+        rights: "Derived PhenoCam GCC data only. This endpoint does not republish camera imagery.",
+      };
+    } catch (error) {
+      lastError = error;
+    }
   }
+  return {
+    available: false,
+    camera: camera ? {
+      id: camera.id,
+      name: camera.name,
+      milepost: camera.milepost,
+      state: camera.state,
+      source: camera.source,
+      source_url: camera.url,
+      site: PHENOCAM_SITE,
+      roi: PHENOCAM_ROI_NAME,
+    } : null,
+    error: String(lastError?.message || lastError || "PhenoCam summary unavailable"),
+    source_strategy: "direct-known-roi-summary",
+    rights: "No third-party camera imagery is republished.",
+  };
 }
 
 async function satelliteCatalogContext(lat, lon, now = new Date()) {
