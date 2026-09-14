@@ -1,0 +1,125 @@
+name: Apply Blue Ridge camera reliability fix
+on:
+  push:
+    branches: ["fix-blue-ridge-camera-data"]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[camera-fixed]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-blue-ridge-camera-data
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Patch API, UI and tests
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          api_path = Path('api/blue-ridge-visual-verification.js')
+          api = api_path.read_text()
+          api = api.replace(
+              'const PHENOCAM_ROIS = "https://phenocam.nau.edu/api/roilists/?limit=10000";\nconst PHENOCAM_SITE = "asuhighlands";',
+              'const PHENOCAM_SITE = "asuhighlands";\nconst PHENOCAM_PRIMARY_SUMMARY = "https://phenocam.nau.edu/data/archive/asuhighlands/ROI/asuhighlands_DB_1000_3day.csv";\nconst PHENOCAM_FALLBACK_SUMMARY = "https://phenocam.nau.edu/data/archive/asuhighlands/ROI/asuhighlands_DB_1000_1day.csv";\nconst PHENOCAM_ROI_NAME = "asuhighlands_DB_1000";'
+          )
+          replacement = r'''async function phenocamEvidence(now = new Date()) {
+            const camera = CAMERAS.find((entry) => entry.phenocam_site === PHENOCAM_SITE);
+            const summaries = [PHENOCAM_PRIMARY_SUMMARY, PHENOCAM_FALLBACK_SUMMARY];
+            let lastError = null;
+            for (const summaryUrl of summaries) {
+              try {
+                const csv = await fetchText(summaryUrl, { signal: AbortSignal.timeout(5000) });
+                const signal = deriveGccSignal(parseCsv(csv), now);
+                if (!signal.available) throw new Error(signal.reason || "PhenoCam summary had no usable GCC data");
+                return {
+                  available: true,
+                  camera: {
+                    id: camera.id,
+                    name: camera.name,
+                    milepost: camera.milepost,
+                    state: camera.state,
+                    source: camera.source,
+                    source_url: camera.url,
+                    site: PHENOCAM_SITE,
+                    roi: PHENOCAM_ROI_NAME,
+                    vegetation_type: "DB",
+                  },
+                  signal,
+                  data_url: summaryUrl,
+                  source_strategy: "direct-known-roi-summary",
+                  rights: "Derived PhenoCam GCC data only. This endpoint does not republish camera imagery.",
+                };
+              } catch (error) {
+                lastError = error;
+              }
+            }
+            return {
+              available: false,
+              camera: camera ? {
+                id: camera.id,
+                name: camera.name,
+                milepost: camera.milepost,
+                state: camera.state,
+                source: camera.source,
+                source_url: camera.url,
+                site: PHENOCAM_SITE,
+                roi: PHENOCAM_ROI_NAME,
+              } : null,
+              error: String(lastError?.message || lastError || "PhenoCam summary unavailable"),
+              source_strategy: "direct-known-roi-summary",
+              rights: "No third-party camera imagery is republished.",
+            };
+          }
+
+          async function satelliteCatalogContext'''
+          api, count = re.subn(r'async function phenocamEvidence\(now = new Date\(\)\) \{[\s\S]*?\n\}\n\nasync function satelliteCatalogContext', replacement, api, count=1)
+          if count != 1:
+              raise SystemExit('Could not replace phenocamEvidence')
+          api_path.write_text(api)
+
+          page_path = Path('public/national-tools/fall-color/blue-ridge-parkway/index.html')
+          page = page_path.read_text()
+          page = page.replace('$("visual-stage").textContent="CAMERA DATA UNAVAILABLE";', '$("visual-stage").textContent="RESEARCH FEED DELAYED";')
+          page = page.replace('$("visual-loss").textContent="—";$("visual-trend").textContent="—";$("visual-date").textContent="—";$("visual-distance").textContent="—";', '$("visual-loss").textContent="—";$("visual-trend").textContent="—";$("visual-date").textContent="Use live views";const fallbackDist=Math.abs(Number(best?.milepost)-Number(evidence?.camera?.milepost));$("visual-distance").textContent=Number.isFinite(fallbackDist)?Math.round(fallbackDist)+" MP":"—";')
+          page_path.write_text(page)
+
+          test_path = Path('tests/blue-ridge-visual-verification.test.js')
+          tests = test_path.read_text()
+          extra = r'''
+
+test("automated PhenoCam lookup uses the direct known ROI summary instead of the full ROI catalog", () => {
+  const source = fs.readFileSync(path.join(__dirname, "..", "api/blue-ridge-visual-verification.js"), "utf8");
+  assert.match(source, /asuhighlands_DB_1000_3day\.csv/);
+  assert.match(source, /asuhighlands_DB_1000_1day\.csv/);
+  assert.doesNotMatch(source, /api\/roilists\/\?limit=10000/);
+  assert.match(source, /direct-known-roi-summary/);
+});
+
+test("camera UI distinguishes a delayed research feed from nearby live camera availability", () => {
+  const html = fs.readFileSync(pagePath, "utf8");
+  assert.match(html, /RESEARCH FEED DELAYED/);
+  assert.doesNotMatch(html, /CAMERA DATA UNAVAILABLE/);
+  assert.match(html, /Use live views/);
+  assert.match(html, /nearby_cameras/);
+});
+'''
+          if 'automated PhenoCam lookup uses the direct known ROI summary' not in tests:
+              tests += extra
+          test_path.write_text(tests)
+          PY
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name "Chris Izworski"
+          git config user.email "46615230+izworskic@users.noreply.github.com"
+          git add api/blue-ridge-visual-verification.js public/national-tools/fall-color/blue-ridge-parkway/index.html tests/blue-ridge-visual-verification.test.js
+          git commit -m "Fix Blue Ridge camera data timeout [camera-fixed]"
+          git push origin HEAD:fix-blue-ridge-camera-data
