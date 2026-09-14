@@ -1,28 +1,29 @@
-name: Diagnose Vercel persona deployment
+name: Verify Blue Ridge live persona experience
 on:
   push:
     branches: ["diagnose-vercel-persona-deploy"]
 permissions:
   contents: read
 jobs:
-  inspect:
+  verify-live:
     runs-on: ubuntu-latest
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: Check token availability
+      - name: Probe canonical and upstream
         shell: bash
         run: |
-          if [ -n "$VERCEL_TOKEN" ]; then
-            echo "VERCEL_TOKEN is configured"
-          else
-            echo "VERCEL_TOKEN is not configured"
-            exit 2
-          fi
-      - name: Inspect failed production deployment
-        shell: bash
-        run: npx --yes vercel@latest inspect dpl_CaoRJrnkFby9Junoy2cffpqCErKw --logs --token "$VERCEL_TOKEN"
+          set -euo pipefail
+          canonical='https://chrisizworski.com/national-tools/fall-color/blue-ridge-parkway/'
+          upstream='https://national-fall-color.vercel.app/national-tools/fall-color/blue-ridge-parkway/'
+          for url in "$canonical" "$upstream"; do
+            echo "=== $url ==="
+            code=$(curl -L -sS -o /tmp/page.html -w '%{http_code}' "$url")
+            echo "HTTP $code"
+            test "$code" = "200"
+            grep -F 'Where will you be driving?' /tmp/page.html
+            grep -F 'Anywhere / I’m flexible' /tmp/page.html
+            grep -F '7 days from now' /tmp/page.html
+            grep -F 'See what the leaves look like before you drive' /tmp/page.html
+            grep -F 'Check NPS road status' /tmp/page.html
+            grep -F 'blue-ridge-map' /tmp/page.html
+            grep -F 'Best drive' /tmp/page.html
+          done
