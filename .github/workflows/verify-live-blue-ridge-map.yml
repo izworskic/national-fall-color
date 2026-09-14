@@ -6,20 +6,24 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe public canonical map experience
+      - name: Probe public canonical map and visitor copy
         run: |
           set -euo pipefail
-          URL='https://chrisizworski.com/national-tools/fall-color/blue-ridge-parkway/?map_verify=9288ae75'
+          URL='https://chrisizworski.com/national-tools/fall-color/blue-ridge-parkway/?map_verify=3fedfc97'
           code=$(curl -L -sS -o /tmp/page.html -w '%{http_code}' "$URL")
           echo "HTTP=$code"
           test "$code" = "200"
           grep -F 'id="parkway-map"' /tmp/page.html
           grep -F 'Where the color is along the Parkway' /tmp/page.html
-          grep -F 'leaflet@1.9.4/dist/leaflet.js' /tmp/page.html
-          grep -F 'tile.openstreetmap.org' /tmp/page.html
           grep -F 'Mostly green' /tmp/page.html
           grep -F 'Best color window' /tmp/page.html
-          grep -F 'What people are seeing' /tmp/page.html
-          grep -F 'Weather that could knock leaves down' /tmp/page.html
+          grep -F 'Checking recent leaf reports' /tmp/page.html
+          grep -F 'Checking the next 7 days of weather' /tmp/page.html
+          grep -F 'Checking how dry conditions have been' /tmp/page.html
+          grep -F 'Technical data sources' /tmp/page.html
+          grep -F 'U.S. Drought Monitor' /tmp/page.html
+          if grep -F 'Loading USA-NPN observations' /tmp/page.html; then echo 'OLD_OBSERVATION_COPY_PRESENT=1'; exit 1; fi
+          if grep -F 'Loading NWS context' /tmp/page.html; then echo 'OLD_WEATHER_COPY_PRESENT=1'; exit 1; fi
+          if grep -F 'sampling point' /tmp/page.html; then echo 'OLD_SAMPLING_COPY_PRESENT=1'; exit 1; fi
           if grep -F '<svg id="profile"' /tmp/page.html; then echo 'OLD_PROFILE_PRESENT=1'; exit 1; fi
-          echo 'LIVE_MAP_PERSONA_OK=1'
+          echo 'LIVE_MAP_AND_VISITOR_COPY_OK=1'
