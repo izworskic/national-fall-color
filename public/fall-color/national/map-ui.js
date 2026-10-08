@@ -98,16 +98,59 @@
     if(typeof window.L!=="object")throw Error("Leaflet unavailable");
     map=L.map(host,{zoomControl:true,scrollWheelZoom:false,attributionControl:true,worldCopyJump:false,maxZoom:12,minZoom:2});
     map.setView([39.2,-98.8],4);
-    const streets=L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{
+    // Match the working Michigan fall-color configuration. CARTO's September 2026
+    // key requirement means a missing query parameter renders "API key required"
+    // *inside otherwise successful tile images*, so tileerror alone cannot catch it.
+    // This is the existing public, browser-side basemap key already used in Michigan.
+    const cartoKey="cb1_2y8f_1_1ee5e3a872c91d0ebf5d7b88";
+    const streets=L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key="+encodeURIComponent(cartoKey),{
       attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains:"abcd",maxZoom:12});
-    streets.on("tileerror",()=>{if(fallback)fallback.textContent="Street tiles may be unavailable; map markers and region links still work.";});
+    // Fail-safe independent provider, used only on CARTO outages or by visitor choice.
+    // Respect OSM's direct tile URL, browser referrer and caching policy; no prefetch.
+    const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom:12});
+    const switchButton=document.getElementById("national-switch-basemap");
+    const basemapStatus=document.getElementById("national-basemap-status");
+    let cartoTilesLoaded=0,cartoErrors=0,activeBase=streets;
+    const setBasemapStatus=msg=>{if(basemapStatus)basemapStatus.textContent=msg;};
+    function useBasemap(next,reason){
+      if(activeBase!==next){
+        if(map.hasLayer(streets))map.removeLayer(streets);
+        if(map.hasLayer(osm))map.removeLayer(osm);
+        next.addTo(map);
+        activeBase=next;
+      }
+      if(switchButton)switchButton.textContent=activeBase===streets?"Use OpenStreetMap instead":"Use CARTO streets instead";
+      setBasemapStatus(reason||(activeBase===streets?"CARTO Voyager street map":"OpenStreetMap street map"));
+    }
+    streets.on("tileload",()=>{cartoTilesLoaded++;});
+    streets.on("tileerror",()=>{
+      if(!map.hasLayer(streets))return;
+      cartoErrors++;
+      if(cartoTilesLoaded===0&&cartoErrors>=3){
+        useBasemap(osm,"CARTO tiles failed. OpenStreetMap backup is active; all regions remain selectable.");
+      }
+    });
+    osm.on("tileerror",()=>{
+      if(map.hasLayer(osm))setBasemapStatus("OpenStreetMap tiles are unavailable. Try CARTO streets; region links remain available.");
+    });
     streets.addTo(map);
+    // A stalled CARTO layer should not leave a permanent empty map.
+    window.setTimeout(()=>{
+      if(map.hasLayer(streets)&&cartoTilesLoaded===0)
+        useBasemap(osm,"CARTO street tiles did not load. OpenStreetMap backup is active.");
+    },7000);
+    if(switchButton)switchButton.addEventListener("click",()=>{
+      if(activeBase===streets)useBasemap(osm,"Showing OpenStreetMap street tiles.");
+      else useBasemap(streets,"Showing CARTO Voyager street tiles.");
+    });
     const imageryDate=new Date(Date.now()-3*86400000).toISOString().slice(0,10);
     const imagery=L.tileLayer("https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/"+imageryDate+"/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",{
       attribution:"NASA GIBS / VIIRS",maxNativeZoom:9,maxZoom:12});
     const washes=L.layerGroup().addTo(map),pins=L.layerGroup().addTo(map);
-    L.control.layers({"Streets":streets,"NASA satellite":imagery},{"Foliage color wash":washes,"Region markers":pins},{collapsed:true}).addTo(map);
+    L.control.layers({"CARTO streets":streets,"OpenStreetMap backup":osm,"NASA satellite":imagery},{"Foliage color wash":washes,"Region markers":pins},{collapsed:true}).addTo(map);
     regions.forEach(region=>{
       const state=M.stageFor(region,selected);
       const ringRadii=[112000,67000,32000];
@@ -126,7 +169,14 @@
       markerRows.set(region.id,{region,marker,hit,washes:rings});
     });
     map.fitBounds([[28,-124],[49.8,-66]],{padding:[12,12],animate:false});
-    map.on("baselayerchange",()=>{if(fallback)fallback.textContent="";});
+    map.on("baselayerchange",event=>{
+      activeBase=event.layer;
+      if(switchButton){
+        switchButton.disabled=activeBase===imagery;
+        switchButton.textContent=activeBase===osm?"Use CARTO streets instead":"Use OpenStreetMap instead";
+      }
+      setBasemapStatus(activeBase===imagery?"NASA satellite imagery":activeBase===osm?"OpenStreetMap street map":"CARTO Voyager street map");
+    });
     if(fallback)fallback.textContent="Zoom in on the Northeast to select neighboring regions individually, or use the linked directory below.";
     renderDate();
     // Leaflet needs a post-layout measurement after the browser loads fonts.
