@@ -5,6 +5,8 @@ import http from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
 import {chromium} from "playwright";
+import {createRequire} from "node:module";
+const {regions}=createRequire(import.meta.url)("../lib/national-region-catalog.js");
 
 const root=path.resolve("public");
 const types={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".json":"application/json",".css":"text/css; charset=utf-8",".png":"image/png",".svg":"image/svg+xml",".jpg":"image/jpeg"};
@@ -45,6 +47,44 @@ try{
   assert.match(await liveMap.locator("#national-basemap-status").innerText(),/OpenStreetMap/);
   await realSwitch.click();
   assert.match(await liveMap.locator("#national-basemap-status").innerText(),/CARTO/);
+  // Load the new fractal regional map using actual CARTO image tiles.
+  const priorTileResponses=tileResponses.length;
+  const regionalErrors=[];
+  liveMap.on("pageerror",e=>regionalErrors.push(e.message));
+  await liveMap.goto(base+"/fall-color/colorado-aspens/",{waitUntil:"domcontentloaded"});
+  await liveMap.waitForTimeout(1200);
+  const regionalDiagnose=await liveMap.evaluate(()=>({
+    status:document.getElementById("regional-map-status")?.textContent,
+    hasLeaflet:typeof window.L,
+    hasModel:typeof window.NationalFallMapState,
+    pinCount:document.querySelectorAll("[data-regional-drive]").length,
+    pinOuter:document.querySelector('[data-regional-drive="1"]')?.outerHTML?.slice(0,350),
+    pinRect:(()=>{const p=document.querySelector('[data-regional-drive="1"]');if(!p)return null;const r=p.getBoundingClientRect();return {width:r.width,height:r.height,x:r.x,y:r.y};})(),
+    mapRect:(()=>{const p=document.getElementById("regional-map");const r=p.getBoundingClientRect();return {width:r.width,height:r.height,x:r.x,y:r.y};})(),
+    mapHTML:document.getElementById("regional-map")?.innerHTML?.slice(0,230),
+    mapScripts:[...document.scripts].filter(s=>s.src.includes("map")).map(s=>s.src)
+  }));
+  console.log("REGIONAL_MAP_DIAG",JSON.stringify({regionalDiagnose,regionalErrors}));
+  await liveMap.waitForSelector('[data-regional-drive="1"]',{state:"attached",timeout:5000});
+  assert.equal(await liveMap.locator("[data-regional-drive]").count(),4);
+  await liveMap.waitForSelector('img.leaflet-tile-loaded[src*="basemaps.cartocdn.com"]',{timeout:18000});
+  assert.ok(tileResponses.slice(priorTileResponses).some(t=>t.status===200&&t.type.includes("image/")&&t.url.includes("?key=cb1_")),
+    "regional map must render a real Michigan-keyed CARTO image tile");
+  const regionalSwitch=liveMap.locator("#regional-switch-basemap");
+  await regionalSwitch.click();
+  assert.match(await liveMap.locator("#regional-basemap-status").innerText(),/OpenStreetMap/);
+  await regionalSwitch.click();
+  assert.match(await liveMap.locator("#regional-basemap-status").innerText(),/CARTO/);
+  await liveMap.evaluate(()=>{
+    const dates=window.NationalFallMapState.seasonDates(2026);
+    const slider=document.getElementById("regional-date-slider");
+    slider.value=String(dates.indexOf("2026-09-20"));
+    slider.dispatchEvent(new Event("input",{bubbles:true}));
+  });
+  assert.equal(await liveMap.locator('[data-regional-drive="1"]').getAttribute("data-stage"),"peak");
+  await liveMap.evaluate(()=>document.querySelector('[data-regional-drive-hit="1"]').dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true,view:window})));
+  await liveMap.locator(".regional-map-popup .regional-map-cta").waitFor({timeout:5000});
+  assert.equal(await liveMap.locator(".regional-map-popup .regional-map-cta").getAttribute("href"),"#drive-1");
   await online.close();
 
   // Simulate a real outage of both tile providers: region interaction must remain usable.
@@ -97,8 +137,25 @@ try{
   await staticPage.goto(base+"/fall-color/national/");
   assert.equal(await staticPage.locator('section[aria-labelledby="region-directory"] .card a').count(),15,"no-JS directory");
   await noJs.close();
+  // Acceptance-gate *every* generated region at the mobile baseline.
+  let regionPins=0;
+  for(const region of regions){
+    const rp=await context.newPage();
+    await rp.goto(base+"/fall-color/"+region.id+"/",{waitUntil:"domcontentloaded"});
+    await rp.waitForSelector('[data-regional-drive="1"]',{timeout:12000});
+    const n=await rp.locator("[data-regional-drive]").count();
+    assert.equal(n,region.drives.length,region.id+" mapped drive count");
+    assert.equal(await rp.locator("[data-regional-drive-hit]").count(),n,region.id+" touch targets");
+    assert.ok((await rp.locator("#regional-selected-date").innerText()).includes("Oct 8"),region.id+" initial season date");
+    assert.ok((await rp.locator("#regional-map-status").innerText()).includes("seasonal estimate"),region.id+" no invented live data");
+    const dimensions=await rp.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
+    assert.ok(dimensions[0]<=dimensions[1]+1,region.id+" mobile horizontal overflow "+dimensions.join("/"));
+    regionPins+=n;
+    await rp.close();
+  }
+  assert.equal(regionPins,49,"49 drive markers mapped across all 15 regions");
   await context.close();
-  console.log("NATIONAL_MAP_BROWSER_PASS 390px; real-keyed-CARTO-tile=PASS; source-switch=PASS; markers=15; dates=5; popup=PASS; tiles-offline=PASS; no-JS=PASS; overflow=0");
+  console.log("NATIONAL_MAP_BROWSER_PASS 390px; national-map=PASS; regional-maps=15; corridor-markers=49; keyed-CARTO-tiles=PASS; switches=PASS; regional-stage=PASS; regional-popup=PASS; tiles-offline=PASS; no-JS=PASS; overflow=0");
 }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));
