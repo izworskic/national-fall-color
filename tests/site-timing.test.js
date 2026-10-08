@@ -72,7 +72,7 @@ test("per-site Leaflet rendering binds independent stages and source-labeled pop
   assert.match(js,/siteStage\(d\)/);
   assert.match(js,/siteStage\(place\)/);
   assert.match(js,/r\.washes\.forEach/);
-  assert.match(js,/not an observed reading for this individual drive/);
+  assert.match(js,/not an observed reading for this individual drive/i);
   assert.match(js,/not a current leaf-color reading here/);
   assert.match(js,/sourceUrl/);
   assert.doesNotMatch(js,/observedLeafColorPct\s*:\s*[1-9]/);
