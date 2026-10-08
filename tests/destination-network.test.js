@@ -38,7 +38,8 @@ test("30 canonical destination pages publish real place identity, map timing, of
   for(const x of ["When to see fall color at","How to plan the visit","Road, park and safety checks","Questions visitors ask","Check your date","NWS current forecast","Geography-specific approximate seasonal timing","not a live canopy observation"]){
     assert.ok(h.includes(x),g.slug+" required content: "+x);
   }
-  assert.ok(h.includes(g.experience)&&h.includes(g.plan)&&h.includes(g.caution),g.slug+" genuinely place-specific visitor content");
+  const escapeText=x=>String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  assert.ok(h.includes(escapeText(g.experience))&&h.includes(escapeText(g.plan))&&h.includes(escapeText(g.caution)),g.slug+" genuinely place-specific visitor content");
   assert.ok(h.includes('id="guide-timing"')&&h.includes('id="guide-date"')&&h.includes('id="stage-verdict"'),g.slug+" working date controls");
   assert.ok(h.includes('application/ld+json'),g.slug+" schema");
   const schema=JSON.parse(h.split('<script type="application/ld+json">')[1].split("</script>")[0]);
