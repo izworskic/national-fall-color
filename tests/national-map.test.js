@@ -82,6 +82,11 @@ test("page has fallback directory, slider, popups, on-demand weather and analyti
   assert.match(hub,/<link rel="canonical" href="https:\/\/chrisizworski.com\/fall-color\/national\/">/);
   for(const id of ["national-date-slider","national-reset-date","national-selected-date","national-map-fallback","national-map-status","national-map-regions"])assert.ok(hub.includes('id="'+id+'"'));
   assert.ok(hub.includes("map-state.js")&&hub.includes("map-ui.js"));
+  const stateRevision=hub.match(/\/national-tools\/fall-color\/national-map\/map-state\.js\?v=([0-9a-f]{12})/);
+  const uiRevision=hub.match(/\/national-tools\/fall-color\/national-map\/map-ui\.js\?v=([0-9a-f]{12})/);
+  assert.ok(stateRevision&&uiRevision,"Map code served under versioned URLs to bypass stale browser/CDN cache");
+  assert.equal(stateRevision[1],uiRevision[1]);
+
   assert.ok(hub.includes('id="national-switch-basemap"'));
   assert.ok(hub.includes('id="national-basemap-status"'));
 
