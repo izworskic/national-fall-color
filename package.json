@@ -10,6 +10,7 @@
     "node": "22.x"
   },
   "dependencies": {
-    "@izworskic/national-outdoor-core": "github:izworskic/national-outdoor-core#v1.0.0"
+    "@izworskic/national-outdoor-core": "github:izworskic/national-outdoor-core#v1.0.0",
+    "leaflet": "1.9.4"
   }
 }
