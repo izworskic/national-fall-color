@@ -19,11 +19,16 @@ if(!state||typeof window.L!=="object"||!Array.isArray(data.drives)||!data.drives
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const localDate=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
 const fmt=iso=>new Date(iso+"T12:00:00Z").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"UTC"});
-const today=localDate(new Date());
-const dates=state.seasonDates(state.seasonYear(new Date()));
-let selected=state.initialDate(new Date(),dates);
+const clock=new Date();
+const today=localDate(clock);
+const baselineYear=state.seasonYear(clock);
+let dates=state.seasonDates(baselineYear);
+const calendarOffSeason=!dates.includes(today);
+let offSeason=calendarOffSeason;
+let selected=offSeason?dates[dates.length-1]:state.initialDate(clock,dates);
 const currentLabel=document.getElementById("regional-selected-date");
 const reset=document.getElementById("regional-reset-date");
+const preview=document.getElementById("regional-preview-next");
 const switchButton=document.getElementById("regional-switch-basemap");
 const sourceLabel=document.getElementById("regional-basemap-status");
 const note=document.getElementById("regional-map-fallback");
@@ -33,8 +38,8 @@ const spotRows=[];
 let lastOpenSpot=null;
 const areaPicker=document.getElementById("regional-area-picker");
 slider.min="0";slider.max=String(dates.length-1);slider.step="1";slider.value=String(dates.indexOf(selected));
-const stage=()=>state.stageFor(data,selected);
-const siteStage=point=>state.stageFor(point,selected);
+const stage=()=>offSeason?state.offSeasonStage(data,baselineYear):state.stageFor(data,selected);
+const siteStage=point=>offSeason?state.offSeasonStage(point,baselineYear):state.stageFor(point,selected);
 const localModel=point=>point.timing&&point.timing.basis&&Array.isArray(point.peak);
 function popup(d){
   const s=siteStage(d);
@@ -62,14 +67,23 @@ function spotPopup(x){
     '</div>';
 }
 function render(){
-  const text=fmt(selected)+(selected===today?" · Today":" · Seasonal preview");
+  const text=offSeason?"Season complete · "+baselineYear:fmt(selected)+(selected===today?" · Today":" · Seasonal preview");
   currentLabel.textContent=text;
-  slider.setAttribute("aria-valuetext",text);
-  if(reset)reset.disabled=!dates.includes(today)||selected===today;
+  slider.setAttribute("aria-valuetext",offSeason?"Season complete; select a historic fall date or preview next season":text);
+  if(reset){
+    reset.disabled=offSeason||(selected===today&&!calendarOffSeason);
+    reset.textContent=calendarOffSeason?"Season status":"Today";
+  }
+  if(preview){
+    preview.hidden=!calendarOffSeason;
+    preview.textContent="Preview fall "+(baselineYear+1);
+  }
   const stages=[...rows.map(r=>siteStage(r.drive)),...spotRows.map(r=>siteStage(r.place))];
   const peaks=stages.filter(s=>s.id==="peak").length;
   const developing=stages.filter(s=>["developed","approaching","gold","early"].includes(s.id)).length;
-  status.textContent="On "+fmt(selected)+": "+peaks+" of "+stages.length+" locations within their modeled typical peak windows; "+
+  status.textContent=offSeason
+    ?"Season complete · muted gray-brown map. Select a past fall date to review the progression, or preview fall "+(baselineYear+1)+". Not live foliage readings."
+    :"On "+fmt(selected)+": "+peaks+" of "+stages.length+" locations within their modeled typical peak windows; "+
     developing+" progressing toward color. Dots differ by landscape, not by live site observations.";
   for(const r of rows){
     const own=siteStage(r.drive);
@@ -247,12 +261,30 @@ try{
 }
 slider.addEventListener("input",()=>{
   selected=dates[Number(slider.value)]||dates[0];
+  offSeason=false;
   render();
 });
 if(reset)reset.addEventListener("click",()=>{
-  if(!dates.includes(today))return;
-  selected=today;
-  slider.value=String(dates.indexOf(today));
+  if(calendarOffSeason){
+    dates=state.seasonDates(baselineYear);
+    slider.min="0";slider.max=String(dates.length-1);
+    slider.value=String(dates.length-1);
+    selected=dates[dates.length-1];
+    offSeason=true;
+  }else{
+    selected=today;
+    slider.value=String(dates.indexOf(today));
+    offSeason=false;
+  }
+  render();
+});
+if(preview)preview.addEventListener("click",()=>{
+  if(!calendarOffSeason)return;
+  dates=state.seasonDates(baselineYear+1);
+  slider.min="0";slider.max=String(dates.length-1);
+  slider.value="0";
+  selected=dates[0];
+  offSeason=false;
   render();
 });
 })();
