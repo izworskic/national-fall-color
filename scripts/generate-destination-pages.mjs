@@ -115,7 +115,7 @@ function page(g){
  '<p class="muted">Source links are provided for independent verification. The modeled season is not presented as an individual sensor or observed leaf percentage.</p></section>'+
  '<section><h2>Explore the local fall-color network</h2><div class="network">'+linked+'</div></section>'+
  '<script type="application/json" id="guide-timing">'+json({peak:g.peak,name:g.name})+'</script></main>'+
- '<footer><div class="shell">Researched field guide by <a href="/chris-izworski/">Chris Izworski</a>. <a href="/fall-color/">Michigan's separate live foliage engine</a> is unchanged.</div></footer>'+
+ '<footer><div class="shell">Researched field guide by <a href="/chris-izworski/">Chris Izworski</a>. <a href="/fall-color/">Michigan’s separate live foliage engine</a> is unchanged.</div></footer>'+
  '<script>('+client.toString()+')();</script></body></html>';
  return html;
 }
