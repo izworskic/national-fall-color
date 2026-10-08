@@ -106,7 +106,18 @@ try{
   if(switchButton)switchButton.addEventListener("click",()=>{
     choose(activeBase===osm?carto:osm);
   });
-  map.on("baselayerchange",e=>choose(e.layer));
+  map.on("baselayerchange",e=>{
+    // Leaflet's own layer selector already switches providers; only sync the UI.
+    // Calling choose() here can re-enter the layer-control event and undo
+    // a user's manual switch.
+    activeBase=e.layer;
+    if(switchButton){
+      switchButton.disabled=activeBase===satellite;
+      switchButton.textContent=activeBase===osm?"Use CARTO streets instead":"Use OpenStreetMap instead";
+    }
+    if(sourceLabel)sourceLabel.textContent=
+      activeBase===osm?"OpenStreetMap streets":activeBase===satellite?"NASA satellite":"CARTO Voyager streets";
+  });
   window.setTimeout(()=>{
     if(map&&map.hasLayer(carto)&&cartoCount===0)
       choose(osm,"CARTO did not load — OpenStreetMap backup active");
