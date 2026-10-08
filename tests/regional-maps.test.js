@@ -85,7 +85,7 @@ test("every regional page has an individual map with the exact existing drives",
 
 });
 test("regional map keeps the tested Michigan colors and an evidence-safe seasonal basis",()=>{
-  assert.equal(M.stages.length,7);
+  assert.equal(M.stages.length,10);
   const ui=fs.readFileSync("public/fall-color/national/regional-map-ui.js","utf8");
   const asset=fs.readFileSync("public/national-tools/fall-color/national-map/regional-map-ui.js","utf8");
   assert.equal(ui,asset);
