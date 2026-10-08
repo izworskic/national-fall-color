@@ -132,9 +132,76 @@ for(const r of regions){
  fs.mkdirSync(path.dirname(p),{recursive:true});
  fs.writeFileSync(p,page(r));
 }
+const mapRegions=regions.map(r=>({id:r.id,name:r.name,lat:r.lat,lon:r.lon,peak:r.peak}));
+const mapStyles=String.raw`
+/* National interactive map: Michigan-inspired circles, restrained washes, and phone-first layout. */
+.national-map-shell{background:#fffdf8;border:1px solid #d6cab5;border-radius:16px;padding:14px;min-width:0;max-width:100%;overflow:hidden}
+.national-map-intro{display:flex;align-items:baseline;gap:12px;justify-content:space-between;flex-wrap:wrap}
+.national-map-intro h2{margin:0 0 9px}
+.national-map-intro p{font-size:14px;margin:0 0 12px}
+#national-map{height:clamp(360px,53vw,510px);width:100%;max-width:100%;background:#d9dfd5;border:1px solid #ddd2be;border-radius:10px;z-index:0}
+.national-map-controls{padding:15px 3px 8px;min-width:0}
+.national-map-date-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+#national-selected-date{font-weight:750;font-size:17px}
+#national-reset-date{background:#e8e0d1;border:1px solid #baad94;border-radius:8px;min-height:44px;padding:8px 13px;color:#2b3026;font-weight:700;cursor:pointer}
+#national-reset-date:disabled{opacity:.45;cursor:default}
+#national-date-slider{display:block;width:100%;max-width:100%;margin:12px 0 4px;accent-color:#9c4e27;min-height:34px;cursor:pointer}
+.national-date-ends{display:flex;justify-content:space-between;font-size:12px;color:#6a6458}
+.national-map-legend{display:flex;flex-wrap:wrap;gap:7px 13px;margin:14px 0 8px}
+.national-map-legend span{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:#444139}
+.national-map-legend i{display:inline-block;width:13px;height:13px;border-radius:50%;border:1px solid #fff;box-shadow:0 0 0 1px #b7ae9e}
+.national-map-footnote,#national-map-status,#national-map-fallback{font-size:13px;color:#615a4e;line-height:1.55;margin:8px 0 0}
+#national-color-now{font-size:14px;margin:13px 0 3px}
+.national-map-shell .leaflet-popup-content-wrapper{border-radius:11px;max-width:calc(100vw - 65px)}
+.national-map-shell .leaflet-popup-content{margin:12px;max-width:calc(100vw - 92px)!important}
+.national-map-shell .map-popup{max-width:100%;min-width:0;overflow-wrap:anywhere;font-size:13px;line-height:1.45;color:#2a2c26}
+.map-popup strong{display:block;font-size:16px;line-height:1.25}
+.map-popup-stage{display:block;font-weight:800;margin:6px 0}
+.map-popup p{margin:7px 0;line-height:1.45}
+.map-popup-cta{display:block;border-radius:8px;background:#355a3b;color:white!important;text-decoration:none;padding:11px 12px;min-height:44px;font-size:14px;font-weight:750;text-align:center;margin-top:10px}
+.national-map-shell .leaflet-control-layers{font-size:12px}
+.national-hub .directory-title{margin:26px 0 12px}
+@media(max-width:700px){
+ .national-hub .grid{grid-template-columns:minmax(0,1fr)}
+ .national-map-shell{padding:9px;border-radius:12px}
+ #national-map{height:365px}
+ .national-map-intro h2{font-size:24px}
+ .national-map-legend{gap:7px 10px}
+ .national-map-legend span{font-size:11px}
+}
+`;
+const mapSection=`<section class="section national-map-shell" aria-labelledby="national-map-heading">
+<div class="national-map-intro"><div><div class="kicker">Explore the changing season</div><h2 id="national-map-heading">U.S. Fall Color Map</h2>
+<p>Move the date to preview broad seasonal color across 15 regions. Tap a circle to plan your trip.</p></div></div>
+<div id="national-map" role="region" aria-label="Map of 15 United States fall foliage regions"></div>
+<div class="national-map-controls">
+<div class="national-map-date-row"><label for="national-date-slider" id="national-selected-date">Select a fall date</label><button id="national-reset-date" type="button">Today</button></div>
+<input type="range" id="national-date-slider" min="0" max="98" value="0" step="1" aria-label="Preview fall foliage by date">
+<div class="national-date-ends"><span>September 1</span><span>December 8 · Texas and late-season color</span></div>
+<div class="national-map-legend" aria-label="Foliage stage legend">
+<span><i style="background:#4A6633"></i>Green</span><span><i style="background:#5A6B3A"></i>Early</span>
+<span><i style="background:#8E6410"></i>Developing gold</span><span><i style="background:#9E5F13"></i>More developed</span>
+<span><i style="background:#9C4E27"></i>Approaching peak</span><span><i style="background:#8E301C"></i>Typical peak</span>
+<span><i style="background:#75512F"></i>Past peak</span></div>
+<p id="national-map-status" role="status" aria-live="polite">Seasonal stages are historical planning estimates, not observed foliage percentages.</p>
+<p id="national-color-now" aria-live="polite">Use the directory below for regional planning.</p>
+<p id="national-map-fallback">If the basemap does not load, the color markers and all region links remain available.</p>
+<p class="national-map-footnote">Colored areas are small illustrative washes around regional anchors, not uniform foliage coverage. Each region has varied elevations and species. NWS is a weather forecast, not a leaf-color observation. <a href="/fall-color/">View Michigan’s detailed live map</a>.</p>
+</div><script type="application/json" id="national-map-regions">${json(mapRegions)}</script></section>`;
 const cards=regions.map((r,i)=>`<article class="card"><div class="kicker">Region ${i+1}</div><h2><a href="${url(r.id)}">${esc(r.name)}</a></h2><p>${esc(r.why)}</p><p class="source">Typical planning window: ${fmt(r.peak[0])}–${fmt(r.peak[1])}</p><p>${r.drives.slice(0,2).map(x=>esc(x[0])).join(" · ")}</p></article>`).join("");
-const hub=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2027 U.S. Fall Color: 15 Regions, Scenic Drives & Weekend Outlooks</title><meta name="description" content="Plan fall color trips in 15 U.S. regions for 2027. Compare typical peak windows, scenic drives, NWS forecasts and local leaf observations."><link rel="canonical" href="${url("national")}"><meta name="robots" content="index,follow,max-image-preview:large"><meta name="author" content="Chris Izworski"><meta property="og:title" content="2027 U.S. Fall Color: 15 Regional Guides"><meta property="og:url" content="${url("national")}"><meta name="twitter:card" content="summary"><script type="application/ld+json">${json({"@context":"https://schema.org","@type":"CollectionPage",url:url("national"),name:"U.S. Fall Color 2027",author:{"@id":"https://chrisizworski.com/#person"},datePublished:"2026-10-08",hasPart:regions.map(r=>({"@type":"WebPage",url:url(r.id),name:r.name}))})}</script><style>${css}</style></head><body><header class="top"><div class="inner"><a class="brand" href="/">Chris Izworski</a><nav><a href="/fall-color/">Michigan color</a><a href="/national-tools/">National tools</a></nav></div></header><main class="inner"><div class="hero"><div class="breadcrumb"><a href="/fall-color/">Fall Color</a> / National</div><div class="kicker">2027 trip planning</div><h1>Fall color across the United States: where to go and when</h1><p class="lede">Choose one of 15 regions to see broad peak-season guidance, scenic-drive options, official National Weather Service weekend weather and available local foliage observations.</p><div class="warn">Seasonal timing is a planning estimate, not a measurement of current leaf color. NWS forecasts cover weather, not foliage. Check road access and local reports before travel.</div></div><div class="section grid">${cards}</div><section class="section"><h2>Michigan fall color already has a dedicated live engine</h2><p>For the most detailed Upper Peninsula and Lower Peninsula timing, use the <a href="/fall-color/">Michigan Fall Color map and regional guides</a>. The national collection uses a separate forecast layer, preserving the Michigan product.</p></section></main><footer class="footer"><div class="inner">Built by <a href="/chris-izworski/">Chris Izworski</a> · <a href="/national-tools/">National outdoor tools</a></div></footer></body></html>`;
+const hub=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2027 U.S. Fall Color: 15 Regions, Scenic Drives & Weekend Outlooks</title><meta name="description" content="Plan fall color trips in 15 U.S. regions for 2027. Compare typical peak windows, scenic drives, NWS forecasts and local leaf observations."><link rel="canonical" href="${url("national")}"><meta name="robots" content="index,follow,max-image-preview:large"><meta name="author" content="Chris Izworski"><meta property="og:title" content="2027 U.S. Fall Color: 15 Regional Guides"><meta property="og:url" content="${url("national")}"><meta name="twitter:card" content="summary_large_image"><meta property="og:description" content="Explore U.S. foliage stages on an interactive map; move the date and plan a scenic weekend across 15 regions."><meta name="twitter:description" content="Explore interactive U.S. fall color by date across 15 regions."><script type="application/ld+json">${json({"@context":"https://schema.org","@type":"CollectionPage",url:url("national"),name:"U.S. Fall Color 2027",author:{"@id":"https://chrisizworski.com/#person"},datePublished:"2026-10-08",hasPart:regions.map(r=>({"@type":"WebPage",url:url(r.id),name:r.name}))})}</script><link rel="stylesheet" href="/national-tools/fall-color/national-map/leaflet/leaflet.css"><style>${css}${mapStyles}</style></head><body><header class="top"><div class="inner"><a class="brand" href="/">Chris Izworski</a><nav><a href="/fall-color/">Michigan color</a><a href="/national-tools/">National tools</a></nav></div></header><main class="inner national-hub"><div class="hero"><div class="breadcrumb"><a href="/fall-color/">Fall Color</a> / National</div><div class="kicker">2027 trip planning</div><h1>Fall color across the United States: where to go and when</h1><p class="lede">Choose one of 15 regions to see broad peak-season guidance, scenic-drive options, official National Weather Service weekend weather and available local foliage observations.</p><div class="warn">Seasonal timing is a planning estimate, not a measurement of current leaf color. NWS forecasts cover weather, not foliage. Check road access and local reports before travel.</div></div>${mapSection}<section class="section" aria-labelledby="region-directory"><h2 class="directory-title" id="region-directory">Plan with the 15 regional guides</h2><div class="grid">${cards}</div></section><section class="section"><h2>Michigan fall color already has a dedicated live engine</h2><p>For the most detailed Upper Peninsula and Lower Peninsula timing, use the <a href="/fall-color/">Michigan Fall Color map and regional guides</a>. The national collection uses a separate forecast layer, preserving the Michigan product.</p></section></main><footer class="footer"><div class="inner">Built by <a href="/chris-izworski/">Chris Izworski</a> · <a href="/national-tools/">National outdoor tools</a></div></footer><script defer src="/national-tools/fall-color/national-map/leaflet/leaflet.js"></script><script defer src="/national-tools/fall-color/national-map/map-state.js"></script><script defer src="/national-tools/fall-color/national-map/map-ui.js"></script></body></html>`;
 const hp=path.join(root,"public/fall-color/national/index.html");fs.mkdirSync(path.dirname(hp),{recursive:true});fs.writeFileSync(hp,hub);
+// Serve first-party assets through the existing national-tools fall-color proxy.
+// The main site proxies /fall-color/national/ HTML, but not nested JS/CSS there.
+const assetRoot=path.join(root,"public/national-tools/fall-color/national-map");
+fs.mkdirSync(assetRoot,{recursive:true});
+fs.copyFileSync(path.join(root,"lib/national-map-state.js"),path.join(assetRoot,"map-state.js"));
+fs.copyFileSync(path.join(root,"public/fall-color/national/map-ui.js"),path.join(assetRoot,"map-ui.js"));
+const leafletDistribution=path.join(root,"node_modules/leaflet/dist");
+const leafletOutput=path.join(assetRoot,"leaflet");
+fs.mkdirSync(leafletOutput,{recursive:true});
+for(const asset of ["leaflet.js","leaflet.css"]) fs.copyFileSync(path.join(leafletDistribution,asset),path.join(leafletOutput,asset));
+fs.cpSync(path.join(leafletDistribution,"images"),path.join(leafletOutput,"images"),{recursive:true});
 const urls=["national",...regions.map(r=>r.id)];
 fs.writeFileSync(path.join(root,"public/fall-color/national-sitemap.xml"),`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(s=>`  <url><loc>${url(s)}</loc><lastmod>2026-10-08</lastmod></url>`).join("\n")}\n</urlset>\n`);
 const locatorPath=path.join(root,"public/national-tools/fall-color/index.html");
