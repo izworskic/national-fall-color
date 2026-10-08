@@ -48,7 +48,7 @@ test("every regional page has an individual map with the exact existing drives",
       assert.ok(html.includes('id="drive-'+(i+1)+'"'));
       total++;
     });
-    assert.ok(html.includes("not observed leaf coverage"));
+    assert.ok(html.includes("not measured leaf color"));
     assert.ok(html.includes('name="robots" content="index,follow,max-image-preview:large"'));
     assert.ok(html.includes('rel="canonical"'));
   }
