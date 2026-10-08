@@ -35,6 +35,8 @@ function card(p,i){
  const link=sourceLink(p.sourceUrl,"Place and seasonal reference");
  const forecast=sourceLink("https://forecast.weather.gov/MapClick.php?lat="+p.lat.toFixed(3)+"&lon="+p.lon.toFixed(3),"NWS point forecast");
  const access=sourceLink(p.accessUrl,p.accessLabel);
+ const namedGuide=(typeof p.guideUrl==="string"&&/^https:\/\/chrisizworski\.com\/fall-color\/[a-z0-9-]+\/[a-z0-9-]+\/$/.test(p.guideUrl))
+  ?'<a href="'+esc(p.guideUrl)+'" class="day-field-guide">Plan this named fall-color destination →</a>':"";
  const stageText=esc(p.stage.label);
  const label=p.kind==="drive"?"Scenic drive vicinity":"Viewing area";
  const typical=human(p.stage.typicalWindow.from)+"–"+human(p.stage.typicalWindow.to);
@@ -45,7 +47,7 @@ function card(p,i){
   (distance?'<p class="day-distance">'+distance+'</p>':"")+
   caution+
   '<div class="day-result-links"><button type="button" data-day-focus-kind="'+esc(p.kind)+'" data-day-focus-index="'+p.index+'">Show on map</button>'+
-  link+forecast+access+'</div></article>';
+  namedGuide+link+forecast+access+'</div></article>';
 }
 function render(){
  const date=dateEl.value;
