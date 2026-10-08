@@ -34,44 +34,54 @@ let lastOpenSpot=null;
 const areaPicker=document.getElementById("regional-area-picker");
 slider.min="0";slider.max=String(dates.length-1);slider.step="1";slider.value=String(dates.indexOf(selected));
 const stage=()=>state.stageFor(data,selected);
+const siteStage=point=>state.stageFor(point,selected);
+const localModel=point=>point.timing&&point.timing.basis&&Array.isArray(point.peak);
 function popup(d){
-  const s=stage();
+  const s=siteStage(d);
   return '<div class="regional-map-popup"><strong>'+escape(d.name)+'</strong>'+
     '<span class="regional-map-stage" style="color:'+s.color+'">'+escape(s.label)+'</span>'+
     '<p><b>Access vicinity:</b> '+escape(d.vicinity)+'</p>'+
     '<p>'+escape(d.corridor)+'. '+escape(d.tip)+'</p>'+
-    '<p><b>Regionwide seasonal model:</b> '+fmt(s.typicalWindow.from)+'–'+fmt(s.typicalWindow.to)+
-    '. Not an observed reading for this individual drive.</p>'+
+    '<p><b>Illustrative local color window:</b> '+fmt(s.typicalWindow.from)+'–'+fmt(s.typicalWindow.to)+
+    '. Based on '+escape(d.timing.area)+'. Not an observed reading for this individual drive.</p>'+
+    '<p><a href="'+escape(d.timing.sourceUrl)+'" rel="noopener noreferrer" target="_blank">Source: regional foliage progression ↗</a></p>'+
     '<a class="regional-map-cta" href="#drive-'+d.index+'">View drive '+d.index+' details →</a></div>';
 }
 function spotPopup(x){
-  const stateInfo=stage();
+  const stateInfo=siteStage(x);
   const source=(typeof x.sourceUrl==="string"&&x.sourceUrl.startsWith("https://"))?x.sourceUrl:null;
   return '<div class="regional-map-popup"><strong>'+escape(x.name)+'</strong>'+
     '<span class="regional-map-stage" style="color:'+stateInfo.color+'">'+escape(stateInfo.label)+'</span>'+
     '<p><b>Viewing area · '+escape(x.state)+'</b> (approximate map location)</p>'+
     '<p>'+escape(x.reason)+'</p>'+
-    '<p><b>Seasonal model for the broader region, not a current reading here.</b> Local elevations and coastal conditions can differ.</p>'+
+    '<p><b>Illustrative local color window:</b> '+fmt(stateInfo.typicalWindow.from)+'–'+fmt(stateInfo.typicalWindow.to)+'</p>'+
+    '<p>'+escape(x.timing.area)+'. This is not a current leaf-color reading here.</p>'+
+    '<p><a href="'+escape(x.timing.sourceUrl)+'" rel="noopener noreferrer" target="_blank">Source: regional seasonal progression ↗</a></p>'+
     '<a class="regional-map-cta" href="#viewing-'+x.index+'">View location details →</a>'+
     (source?'<p><a href="'+escape(source)+'" target="_blank" rel="noopener noreferrer">Official regional travel or park reference ↗</a></p>':'')+
     '</div>';
 }
 function render(){
-  const s=stage();
   const text=fmt(selected)+(selected===today?" · Today":" · Seasonal preview");
   currentLabel.textContent=text;
   slider.setAttribute("aria-valuetext",text);
   if(reset)reset.disabled=!dates.includes(today)||selected===today;
-  status.textContent=s.label+" · Broad regional seasonal estimate for "+fmt(selected)+". All dots use the same regional timing model; viewing locations are not individual leaf-color measurements.";
+  const stages=[...rows.map(r=>siteStage(r.drive)),...spotRows.map(r=>siteStage(r.place))];
+  const peaks=stages.filter(s=>s.id==="peak").length;
+  const developing=stages.filter(s=>["developed","approaching","gold","early"].includes(s.id)).length;
+  status.textContent="On "+fmt(selected)+": "+peaks+" of "+stages.length+" locations within their modeled typical peak windows; "+
+    developing+" progressing toward color. Dots differ by landscape, not by live site observations.";
   for(const r of rows){
-    r.pin.setStyle({color:s.color,fillColor:s.color});
-    r.pin.getElement()?.setAttribute("data-stage",s.id);
-    r.washes.forEach((w,i)=>w.setStyle({fillColor:s.color,fillOpacity:state.washAlpha(s.id)*[.40,.70,1][i]}));
+    const own=siteStage(r.drive);
+    r.pin.setStyle({color:own.color,fillColor:own.color});
+    r.pin.getElement()?.setAttribute("data-stage",own.id);
+    r.washes.forEach((w,i)=>w.setStyle({fillColor:own.color,fillOpacity:state.washAlpha(own.id)*[.40,.70,1][i]}));
     r.hit.setPopupContent(popup(r.drive));
   }
   for(const r of spotRows){
-    r.pin.setStyle({fillColor:s.color,color:"#ffffff"});
-    r.pin.getElement()?.setAttribute("data-stage",s.id);
+    const own=siteStage(r.place);
+    r.pin.setStyle({fillColor:own.color,color:"#ffffff"});
+    r.pin.getElement()?.setAttribute("data-stage",own.id);
     r.hit.setPopupContent(spotPopup(r.place));
   }
   if(lastOpenSpot!==null){
@@ -149,8 +159,8 @@ try{
   },7000);
   const bounds=[];
   data.drives.forEach(d=>{
-    if(!Number.isFinite(d.lat)||!Number.isFinite(d.lon))return;
-    const coords=[d.lat,d.lon],s=stage();
+    if(!Number.isFinite(d.lat)||!Number.isFinite(d.lon)||!localModel(d))return;
+    const coords=[d.lat,d.lon],s=siteStage(d);
     bounds.push(coords);
     // Three restrained rings, like Michigan. Illustrative, not a polygon of color.
     const ringRadii=[26000,16000,9000];
@@ -179,8 +189,8 @@ try{
     rows.push({drive:d,pin,hit,washes:washLayers});
   });
   (Array.isArray(data.spots)?data.spots:[]).forEach(place=>{
-    if(!Number.isFinite(place.lat)||!Number.isFinite(place.lon))return;
-    const coords=[place.lat,place.lon],s=stage();
+    if(!Number.isFinite(place.lat)||!Number.isFinite(place.lon)||!localModel(place))return;
+    const coords=[place.lat,place.lon],s=siteStage(place);
     bounds.push(coords);
     // Deliberately smaller than the 9px scenic-drive corridor symbols;
     // secondary locations receive no extra wash to avoid giant color blobs.
