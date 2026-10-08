@@ -50,7 +50,9 @@ function popup(d){
     '<p><b>Illustrative local color window:</b> '+fmt(s.typicalWindow.from)+'–'+fmt(s.typicalWindow.to)+
     '. Based on '+escape(d.timing.area)+'. Not an observed reading for this individual drive.</p>'+
     '<p><a href="'+escape(d.timing.sourceUrl)+'" rel="noopener noreferrer" target="_blank">Source: regional foliage progression ↗</a></p>'+
-    '<a class="regional-map-cta" href="#drive-'+d.index+'">View drive '+d.index+' details →</a></div>';
+    '<a class="regional-map-cta" href="#drive-'+d.index+'">View drive '+d.index+' details →</a>'+ 
+    (typeof d.guideUrl==="string"&&d.guideUrl.startsWith("https://chrisizworski.com/fall-color/")
+      ?'<p><a href="'+escape(d.guideUrl)+'">Detailed fall color guide →</a></p>':'')+'</div>';
 }
 function spotPopup(x){
   const stateInfo=siteStage(x);
@@ -63,6 +65,7 @@ function spotPopup(x){
     '<p>'+escape(x.timing.area)+'. This is not a current leaf-color reading here.</p>'+
     '<p><a href="'+escape(x.timing.sourceUrl)+'" rel="noopener noreferrer" target="_blank">Source: regional seasonal progression ↗</a></p>'+
     '<a class="regional-map-cta" href="#viewing-'+x.index+'">View location details →</a>'+
+    (typeof x.guideUrl==="string"&&x.guideUrl.startsWith("https://chrisizworski.com/fall-color/")?'<p><a href="'+escape(x.guideUrl)+'">Detailed fall color guide →</a></p>':'')+
     (source?'<p><a href="'+escape(source)+'" target="_blank" rel="noopener noreferrer">Official regional travel or park reference ↗</a></p>':'')+
     '</div>';
 }
