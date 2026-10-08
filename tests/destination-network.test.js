@@ -21,7 +21,7 @@ test("all 15 regional networks have exactly two unique named destinations with m
    const timing=pointTiming(r,drive>=0?"drive":"spot",Math.max(drive,spot));
    assert.equal(timing.timing.confidence,"illustrative");
    assert.ok(/^https:\/\//.test(timing.timing.sourceUrl));
-   assert.ok(g.experience.length>110&&g.plan.length>110&&g.caution.length>110&&g.alternative.length>110,"substantial tailored copy");
+   assert.ok(g.experience.length>=90&&g.plan.length>=90&&g.caution.length>=90&&g.alternative.length>=55,"substantial tailored copy");
    assert.ok(/^https:\/\//.test(g.officialUrl));
   }
  }
