@@ -3,7 +3,7 @@ const fs=require("node:fs"),vm=require("node:vm");
 const {regions}=require("../lib/national-region-catalog");
 const M=require("../lib/national-map-state");
 const htmlPath="public/fall-color/national/index.html";
-const statePath="public/fall-color/national/map-state.js";
+const statePath="public/national-tools/fall-color/national-map/map-state.js";
 const uiPath="public/fall-color/national/map-ui.js";
 const getHub=()=>fs.readFileSync(htmlPath,"utf8");
 
@@ -76,6 +76,9 @@ test("page has fallback directory, slider, popups, on-demand weather and analyti
   for(const id of ["national-date-slider","national-reset-date","national-selected-date","national-map-fallback","national-map-status","national-map-regions"])assert.ok(hub.includes('id="'+id+'"'));
   assert.ok(hub.includes("map-state.js")&&hub.includes("map-ui.js"));
   assert.ok(fs.existsSync(statePath));
+  assert.ok(fs.existsSync("public/national-tools/fall-color/national-map/map-ui.js"));
+  assert.ok(fs.existsSync("public/national-tools/fall-color/national-map/leaflet/leaflet.js"));
+  assert.ok(hub.includes("/national-tools/fall-color/national-map/leaflet/leaflet.css"));
   assert.equal(fs.readFileSync(statePath,"utf8"),fs.readFileSync("lib/national-map-state.js","utf8"));
   assert.match(ui,/addEventListener\("input"/);
   assert.match(ui,/setStyle\(/);
