@@ -91,8 +91,9 @@ try{
   });
   assert.equal(await liveMap.locator('[data-regional-drive="1"]').getAttribute("data-stage"),"peak");
   await liveMap.evaluate(()=>document.querySelector('[data-regional-drive-hit="1"]').dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true,view:window})));
-  await liveMap.locator(".regional-map-popup .regional-map-cta").waitFor({timeout:5000});
-  assert.equal(await liveMap.locator(".regional-map-popup .regional-map-cta").getAttribute("href"),"#drive-1");
+  const driveCta=liveMap.locator('.regional-map-popup .regional-map-cta[href="#drive-1"]').first();
+  await driveCta.waitFor({timeout:5000});
+  assert.equal(await driveCta.getAttribute("href"),"#drive-1");
   await online.close();
 
   // Simulate a real outage of both tile providers: region interaction must remain usable.
