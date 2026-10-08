@@ -7,8 +7,10 @@ const require=createRequire(import.meta.url);
 const {regions}=require("../lib/national-region-catalog.js");
 const {corridorAnchors}=require("../lib/national-regional-map-places.js");
 const {viewingSpots}=require("../lib/national-regional-viewing-spots.js");
+const {pointTiming,validateCatalog}=require("../lib/national-site-timing.js");
 const root=process.cwd();
 const regionalMapRevision=crypto.createHash("sha256")
+  .update(fs.readFileSync(path.join(root,"lib/national-site-timing.js")))
   .update(fs.readFileSync(path.join(root,"lib/national-map-state.js")))
   .update(fs.readFileSync(path.join(root,"public/fall-color/national/regional-map-ui.js")))
   .digest("hex").slice(0,12);
@@ -173,6 +175,7 @@ function regionalMapSection(r){
   const points=corridorAnchors[r.id];
   if(!Array.isArray(points)||points.length!==r.drives.length)
     throw new Error("Missing corridor map anchors for "+r.id);
+  validateCatalog(regions,viewingSpots);
   const candidates=viewingSpots[r.id]||[];
   // Every extra dot needs a unique label, a geographically plausible area,
   // and an HTTPS destination reference. Never create orphan catalog markers.
@@ -184,12 +187,12 @@ function regionalMapSection(r){
        !reason||!/^https:\/\//.test(sourceUrl))
       throw new Error("Invalid viewing-location entry: "+r.id+" "+i);
     seen.add(name.toLowerCase());
-    return {index:i+1,name,lat,lon,state,reason,sourceUrl};
+    return {index:i+1,name,lat,lon,state,reason,sourceUrl,...pointTiming(r,"spot",i)};
   });
   const payload={id:r.id,name:r.name,lat:r.lat,lon:r.lon,peak:r.peak,spots,
     drives:r.drives.map((d,i)=>({
       index:i+1,name:d[0],corridor:d[1],tip:d[2],lat:points[i][0],lon:points[i][1],
-      vicinity:points[i][2]
+      vicinity:points[i][2],...pointTiming(r,"drive",i)
     }))};
   for(const d of payload.drives){
     if(!Number.isFinite(d.lat)||!Number.isFinite(d.lon)||!d.vicinity)
@@ -206,9 +209,10 @@ function regionalMapSection(r){
   return `<section class="section regional-map-shell" aria-labelledby="regional-map-heading">
     <div class="regional-map-head"><div><div class="kicker">Zoom into this region</div>
     <h2 id="regional-map-heading">Explore ${esc(r.name.replace(/ Fall Color$/,""))} on the map</h2>
-    <p>Same Michigan-style foliage colors. Explore ${r.drives.length} scenic-drive corridors and ${spots.length} additional viewing areas. Change the date to preview broad regional timing; tap a point to explore.</p></div>
+    <p>Michigan-style regional color progression: each area now has its own typical seasonal timing. Compare scenic drives and viewing areas on a date, then tap a dot to see its estimated window and geographic basis.</p></div>
     <div class="regional-map-source"><button type="button" id="regional-switch-basemap">Use OpenStreetMap instead</button>
     <span id="regional-basemap-status" role="status" aria-live="polite">CARTO Voyager streets</span></div></div>
+    <p class="regional-map-meta" id="regional-local-model-note">Estimated seasonal progression · local topography and historic regional patterns, not live foliage readings</p>
     <div id="regional-map" role="region" aria-label="Interactive map of ${r.drives.length} fall foliage scenic drives near ${esc(r.name)}"></div>
     <div class="regional-location-key"><span><i class="key-drive"></i> Scenic-drive corridor</span><span><i class="key-spot"></i> Viewing area</span></div>
     <div class="regional-focus">${focus}</div>
@@ -218,10 +222,10 @@ function regionalMapSection(r){
     <input type="range" id="regional-date-slider" min="0" max="98" value="0" step="1" aria-label="Preview regional fall foliage seasonal stage">
     <div class="regional-map-date-ends"><span>September 1</span><span>December 8</span></div>
     <p class="regional-map-meta" id="regional-map-status" role="status" aria-live="polite">Loading historical seasonal stage…</p>
-    <p class="regional-map-meta" id="regional-map-fallback">Markers identify representative corridor access areas, not mapped road routes. Shaded rings illustrate broad seasonality, not observed leaf coverage; actual drive color varies with elevation and species. Confirm access and route with official maps.</p>
+    <p class="regional-map-meta" id="regional-map-fallback">These color differences are <strong>geography-informed typical seasonal scenarios</strong>, not measured leaf color or a live site forecast. Map points are approximate access areas, not driving directions. Weather, species, elevation and storms can shift the outcome.</p>
     </div>
     <details class="regional-spot-directory"><summary>${spots.length} additional foliage viewing locations · tap to explore</summary>
-      <p class="regional-map-meta">Locations are approximate viewing areas, not parking or routing coordinates. The shared map color is a regional historical estimate, not an observation at each point.</p>
+      <p class="regional-map-meta">Locations are approximate viewing areas, not parking or routing coordinates. Their displayed timing bands vary by landscape, but remain illustrative historical planning guidance, not live observations.</p>
       <div class="regional-spot-grid">${spotCards}</div>
     </details>
     <script type="application/json" id="regional-map-data">${json(payload)}</script></section>`;

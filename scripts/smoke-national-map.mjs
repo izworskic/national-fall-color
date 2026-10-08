@@ -153,6 +153,23 @@ try{
   await ne.waitForSelector('[data-regional-spot="1"]',{timeout:12000});
   assert.equal(await ne.locator("[data-regional-spot]").count(),16,"16 additional New England viewing areas");
   assert.equal(await ne.locator("[data-regional-drive]").count(),4,"existing four New England drives retained");
+  // Match the Michigan behavior: on the same date northern and coastal
+  // destinations should not all have identical colors.
+  const neStages=await ne.locator("[data-regional-spot]").evaluateAll(nodes=>nodes.map(n=>n.getAttribute("data-stage")));
+  assert.ok(new Set(neStages).size>=3,"New England must show >=3 independent local stages on Oct 8");
+  const dix=await ne.locator('[data-regional-spot="4"]').getAttribute("data-stage");
+  const camden=await ne.locator('[data-regional-spot="13"]').getAttribute("data-stage");
+  assert.notEqual(dix,camden,"Dixville Notch and coastal Camden must not share an identical date-curve");
+  await ne.evaluate(()=>{
+    const dates=window.NationalFallMapState.seasonDates(2026);
+    const slider=document.getElementById("regional-date-slider");
+    slider.value=String(dates.indexOf("2026-10-18"));
+    slider.dispatchEvent(new Event("input",{bubbles:true}));
+  });
+  assert.notEqual(await ne.locator('[data-regional-spot="4"]').getAttribute("data-stage"),
+    await ne.locator('[data-regional-spot="13"]').getAttribute("data-stage"),
+    "north/coast remain distinct as color advances south");
+
   await ne.locator("#regional-area-picker").selectOption("VT");
   assert.equal(await ne.locator("#regional-area-picker").inputValue(),"VT","state focus works");
   await ne.locator(".regional-spot-directory summary").click();
@@ -160,7 +177,7 @@ try{
   const neCta=ne.locator('.regional-map-popup .regional-map-cta[href="#viewing-6"]').first();
   await neCta.waitFor({timeout:5000});
   assert.equal(await neCta.getAttribute("href"),"#viewing-6");
-  assert.equal(await ne.locator(".regional-map-popup").getByText(/not a current reading here/i).count(),1);
+  assert.ok((await ne.locator(".regional-map-popup").innerText()).includes("not a current leaf-color reading here"));
   const neWidth=await ne.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
   assert.ok(neWidth[0]<=neWidth[1]+1,"New England expanded map no horizontal overflow");
   await ne.close();
@@ -174,7 +191,7 @@ try{
     assert.equal(n,region.drives.length,region.id+" mapped drive count");
     assert.equal(await rp.locator("[data-regional-drive-hit]").count(),n,region.id+" touch targets");
     assert.ok((await rp.locator("#regional-selected-date").innerText()).includes("Oct 8"),region.id+" initial season date");
-    assert.ok((await rp.locator("#regional-map-status").innerText()).includes("seasonal estimate"),region.id+" no invented live data");
+    assert.match(await rp.locator("#regional-map-status").innerText(),/modeled typical peak windows/i,region.id+" no invented live data");
     const dimensions=await rp.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
     assert.ok(dimensions[0]<=dimensions[1]+1,region.id+" mobile horizontal overflow "+dimensions.join("/"));
     const spots=await rp.locator("[data-regional-spot]").count();
@@ -187,7 +204,7 @@ try{
   assert.equal(regionPins,49,"49 drive markers mapped across all 15 regions");
   assert.equal(viewingPins,53,"53 additional research-backed points mapped");
   await context.close();
-  console.log("NATIONAL_MAP_BROWSER_PASS 390px; regional-maps=15; corridors=49; viewing-locations=53; new-england-spots=16; state-zoom=PASS; spot-popup=PASS; keyed-CARTO-tiles=PASS; switches=PASS; tiles-offline=PASS; no-JS=PASS; overflow=0");
+  console.log("NATIONAL_MAP_BROWSER_PASS 390px; independent-site-stages=PASS; NE-north-coast-gradient=PASS; regional-maps=15; corridors=49; viewing-locations=53; new-england-spots=16; state-zoom=PASS; spot-popup=PASS; keyed-CARTO-tiles=PASS; switches=PASS; tiles-offline=PASS; no-JS=PASS; overflow=0");
 }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));

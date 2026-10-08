@@ -48,7 +48,7 @@ test("every regional page has an individual map with the exact existing drives",
       assert.ok(html.includes('id="drive-'+(i+1)+'"'));
       total++;
     });
-    assert.ok(html.includes("not observed leaf coverage"));
+    assert.ok(html.includes("not measured leaf color"));
     assert.ok(html.includes('name="robots" content="index,follow,max-image-preview:large"'));
     assert.ok(html.includes('rel="canonical"'));
   }
@@ -105,7 +105,7 @@ test("regional map keeps the tested Michigan colors and an evidence-safe seasona
   assert.match(ui,/spotPopup/);
   assert.match(ui,/Viewing locations/);
   assert.match(ui,/areaPicker\.addEventListener\("change"/);
-  assert.match(ui,/All dots use the same regional timing model/);
+  assert.match(ui,/Dots differ by landscape, not by live site observations/);
 
   assert.match(ui,/regional-date-slider/);
   assert.doesNotMatch(ui,/mapbox|access_token|pk\./i);
