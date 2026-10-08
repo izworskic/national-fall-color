@@ -6,6 +6,7 @@ import {createRequire} from "node:module";
 const require=createRequire(import.meta.url);
 const {regions}=require("../lib/national-region-catalog.js");
 const {corridorAnchors}=require("../lib/national-regional-map-places.js");
+const {viewingSpots}=require("../lib/national-regional-viewing-spots.js");
 const root=process.cwd();
 const regionalMapRevision=crypto.createHash("sha256")
   .update(fs.readFileSync(path.join(root,"lib/national-map-state.js")))
@@ -148,14 +149,44 @@ const regionalMapStyles=String.raw`
 .regional-map-stage{display:block;font-weight:800;margin:6px 0}
 .regional-map-cta{display:block;text-align:center;padding:10px 12px;background:#355a3b;border-radius:8px;min-height:44px;color:white!important;text-decoration:none;font-weight:750}
 .regional-map-shell .leaflet-control-layers{font-size:12px}
+.regional-location-key{display:flex;gap:13px;flex-wrap:wrap;padding:10px 3px 0;font-size:12px;color:#514d45}
+.regional-location-key span{display:inline-flex;align-items:center;gap:5px}
+.regional-location-key i{display:inline-block;background:#9c4e27;flex-shrink:0}
+.regional-location-key .key-drive{width:15px;height:15px;border:2px solid #fff;outline:1px solid #776e62;border-radius:50%}
+.regional-location-key .key-spot{width:11px;height:11px;border:2px solid #fff;outline:1px solid #776e62;border-radius:50%}
+.regional-focus{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 3px 0}
+.regional-focus:empty{display:none}
+.regional-focus label{font-weight:700;font-size:13px}
+#regional-area-picker{font:inherit;max-width:100%;min-height:44px;border:1px solid #baa98c;border-radius:8px;background:#fff;padding:8px}
+.regional-spot-directory{margin:14px 2px 4px;border-top:1px solid #d6cab5;padding-top:12px}
+.regional-spot-directory summary{font-weight:750;cursor:pointer;padding:6px 0;font-size:14px}
+.regional-spot-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.regional-spot-item{border:1px solid #e2dbce;border-radius:10px;padding:10px;min-width:0;font-size:12px;line-height:1.45}
+.regional-spot-item button{border:0;background:none;padding:2px 0;font:700 14px/1.35 system-ui,sans-serif;text-align:left;color:#30533c;text-decoration:underline;cursor:pointer}
+.regional-spot-item span{display:block;color:#5f5a50;padding:3px 0}
+.regional-spot-item a{font-size:11px}
+.regional-spot-item:target{outline:3px solid #9c4e27;outline-offset:2px}
 .card:target{outline:3px solid #9c4e27;outline-offset:3px}
-@media(max-width:700px){.regional-map-shell{padding:9px;border-radius:12px}#regional-map{height:365px}.regional-map-head h2{font-size:24px}}
+@media(max-width:700px){.regional-map-shell{padding:9px;border-radius:12px}#regional-map{height:365px}.regional-map-head h2{font-size:24px}.regional-spot-grid{grid-template-columns:minmax(0,1fr)}}
 `;
 function regionalMapSection(r){
   const points=corridorAnchors[r.id];
   if(!Array.isArray(points)||points.length!==r.drives.length)
     throw new Error("Missing corridor map anchors for "+r.id);
-  const payload={id:r.id,name:r.name,lat:r.lat,lon:r.lon,peak:r.peak,
+  const candidates=viewingSpots[r.id]||[];
+  // Every extra dot needs a unique label, a geographically plausible area,
+  // and an HTTPS destination reference. Never create orphan catalog markers.
+  const seen=new Set();
+  const spots=candidates.map((x,i)=>{
+    const [name,lat,lon,state,reason,sourceUrl]=x;
+    if(!name||seen.has(name.toLowerCase())||!r.states.includes(state)||
+       !Number.isFinite(lat)||lat<25||lat>49.5||!Number.isFinite(lon)||lon<-125||lon>-66||
+       !reason||!/^https:\/\//.test(sourceUrl))
+      throw new Error("Invalid viewing-location entry: "+r.id+" "+i);
+    seen.add(name.toLowerCase());
+    return {index:i+1,name,lat,lon,state,reason,sourceUrl};
+  });
+  const payload={id:r.id,name:r.name,lat:r.lat,lon:r.lon,peak:r.peak,spots,
     drives:r.drives.map((d,i)=>({
       index:i+1,name:d[0],corridor:d[1],tip:d[2],lat:points[i][0],lon:points[i][1],
       vicinity:points[i][2]
@@ -164,13 +195,23 @@ function regionalMapSection(r){
     if(!Number.isFinite(d.lat)||!Number.isFinite(d.lon)||!d.vicinity)
       throw new Error("Invalid scenic corridor access anchor "+r.id+" drive "+d.index);
   }
+  const focusStates=[...new Set(spots.map(x=>x.state))];
+  const focus=focusStates.length>1?`<label for="regional-area-picker">Zoom to area</label>
+    <select id="regional-area-picker"><option value="all">All locations</option>${focusStates.map(code=>`<option value="${esc(code)}">${esc(code)}</option>`).join("")}</select>`:"";
+  const spotCards=spots.map(x=>`<article class="regional-spot-item" id="viewing-${x.index}">
+    <button type="button" data-regional-spot-pick="${x.index}" aria-label="Show ${esc(x.name)} on map">${esc(x.name)}</button>
+    <span>${esc(x.state)} · ${esc(x.reason)}</span>
+    <a href="${esc(x.sourceUrl)}" target="_blank" rel="noopener noreferrer">Regional source ↗</a>
+    </article>`).join("");
   return `<section class="section regional-map-shell" aria-labelledby="regional-map-heading">
     <div class="regional-map-head"><div><div class="kicker">Zoom into this region</div>
     <h2 id="regional-map-heading">Explore ${esc(r.name.replace(/ Fall Color$/,""))} on the map</h2>
-    <p>Same Michigan-style foliage colors. Change the date, zoom into each scenic drive, and tap a marker for the corridor details below.</p></div>
+    <p>Same Michigan-style foliage colors. Explore ${r.drives.length} scenic-drive corridors and ${spots.length} additional viewing areas. Change the date to preview broad regional timing; tap a point to explore.</p></div>
     <div class="regional-map-source"><button type="button" id="regional-switch-basemap">Use OpenStreetMap instead</button>
     <span id="regional-basemap-status" role="status" aria-live="polite">CARTO Voyager streets</span></div></div>
     <div id="regional-map" role="region" aria-label="Interactive map of ${r.drives.length} fall foliage scenic drives near ${esc(r.name)}"></div>
+    <div class="regional-location-key"><span><i class="key-drive"></i> Scenic-drive corridor</span><span><i class="key-spot"></i> Viewing area</span></div>
+    <div class="regional-focus">${focus}</div>
     <div class="regional-map-controls"><div class="regional-map-date-row">
     <label for="regional-date-slider" id="regional-selected-date">Choose a fall date</label>
     <button type="button" id="regional-reset-date">Today</button></div>
@@ -178,7 +219,12 @@ function regionalMapSection(r){
     <div class="regional-map-date-ends"><span>September 1</span><span>December 8</span></div>
     <p class="regional-map-meta" id="regional-map-status" role="status" aria-live="polite">Loading historical seasonal stage…</p>
     <p class="regional-map-meta" id="regional-map-fallback">Markers identify representative corridor access areas, not mapped road routes. Shaded rings illustrate broad seasonality, not observed leaf coverage; actual drive color varies with elevation and species. Confirm access and route with official maps.</p>
-    </div><script type="application/json" id="regional-map-data">${json(payload)}</script></section>`;
+    </div>
+    <details class="regional-spot-directory"><summary>${spots.length} additional foliage viewing locations · tap to explore</summary>
+      <p class="regional-map-meta">Locations are approximate viewing areas, not parking or routing coordinates. The shared map color is a regional historical estimate, not an observation at each point.</p>
+      <div class="regional-spot-grid">${spotCards}</div>
+    </details>
+    <script type="application/json" id="regional-map-data">${json(payload)}</script></section>`;
 }
 
 function page(r){
