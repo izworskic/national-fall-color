@@ -59,7 +59,9 @@ test("every regional page has an individual map with the exact existing drives",
   for(const region of regions){
     const p="public/fall-color/"+region.id+"/index.html";
     const html=fs.readFileSync(p,"utf8");
-    const embedded=JSON.parse(html.match(/<script type="application\\/json" id="regional-map-data">([^<]+)<\\/script>/)[1]);
+    const encoded=html.split('<script type="application/json" id="regional-map-data">')[1]?.split("</script>")[0];
+    assert.ok(encoded,"embedded map JSON "+region.id);
+    const embedded=JSON.parse(encoded);
     const spots=embedded.spots;
     assert.equal(spots.length,viewingSpots[region.id].length);
     assert.ok(html.includes('class="regional-spot-directory"'),"static locality directory "+region.id);
@@ -73,7 +75,7 @@ test("every regional page has an individual map with the exact existing drives",
       assert.ok(region.states.includes(spot.state),"outside catalog states "+region.id);
       assert.ok(Number.isFinite(spot.lat)&&Number.isFinite(spot.lon),"finite coordinates "+region.id);
       assert.ok(Math.abs(spot.lat-region.lat)<4.5&&Math.abs(spot.lon-region.lon)<5,"coordinate outside region "+spot.name);
-      assert.ok(/^https:\\/\\//.test(spot.sourceUrl),"source link "+spot.name);
+      assert.ok(spot.sourceUrl.startsWith("https://"),"source link "+spot.name);
       assert.ok(spot.reason&&spot.reason.length>15,"decision-relevant context "+spot.name);
     });
     added+=spots.length;
