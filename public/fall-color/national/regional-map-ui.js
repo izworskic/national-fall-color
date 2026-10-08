@@ -106,6 +106,9 @@ function render(){
     const r=rows.find(x=>x.drive.index===lastOpen);
     if(r&&r.hit.isPopupOpen())r.hit.getPopup()?.update();
   }
+  // Inform the optional day planner when the existing Michigan-style map
+  // slider changes. The planner remains absent on non-pilot regions.
+  window.dispatchEvent(new CustomEvent("fall-region-map-selected",{detail:{date:selected,offSeason}}));
 }
 try{
   map=L.map(host,{zoomControl:true,scrollWheelZoom:false,worldCopyJump:false,maxZoom:15,minZoom:3});
@@ -286,5 +289,32 @@ if(preview)preview.addEventListener("click",()=>{
   selected=dates[0];
   offSeason=false;
   render();
+});
+// The planner requests exactly a date; retain the map's own established
+// geolocated marker logic, zoom controls, color rings and popup contents.
+function showDayDate(date){
+  if(typeof date!=="string"||!/^20\d\d-\d\d-\d\d$/.test(date))return false;
+  const y=Number(date.slice(0,4)),newDates=state.seasonDates(y);
+  const index=newDates.indexOf(date);
+  if(index===-1)return false;
+  if(dates[0].slice(0,4)!==String(y))dates=newDates;
+  selected=date;offSeason=false;
+  slider.min="0";slider.max=String(dates.length-1);slider.value=String(index);
+  render();
+  return true;
+}
+window.addEventListener("fall-day-date",e=>showDayDate(e.detail?.date));
+window.addEventListener("fall-day-focus",e=>{
+  const detail=e.detail;
+  if(!detail||!map||!["spot","drive"].includes(detail.kind)||!Number.isInteger(detail.index))return;
+  if(detail.date)showDayDate(detail.date);
+  const r=detail.kind==="spot"
+    ?spotRows.find(x=>x.place.index===detail.index)
+    :rows.find(x=>x.drive.index===detail.index);
+  if(!r)return;
+  const point=detail.kind==="spot"?r.place:r.drive;
+  map.setView([point.lat,point.lon],Math.max(map.getZoom(),9),{animate:false});
+  r.hit.openPopup();
+  host.scrollIntoView({behavior:"smooth",block:"center"});
 });
 })();
