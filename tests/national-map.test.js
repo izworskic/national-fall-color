@@ -25,7 +25,7 @@ test("national map builds 15 geolocated, uniquely linked regions from canonical 
 });
 test("chronological stage curve varies Sept-Nov and separates before from after",()=>{
   const probes=[
-    ["colorado-aspens","2026-09-05","developed"],
+    ["colorado-aspens","2026-09-05","approaching"],
     ["colorado-aspens","2026-09-20","peak"],
     ["colorado-aspens","2026-10-20","past"],
     ["new-england","2026-10-08","peak"],
