@@ -61,6 +61,9 @@ function render(){
 }
 try{
   map=L.map(host,{zoomControl:true,scrollWheelZoom:false,worldCopyJump:false,maxZoom:15,minZoom:3});
+  // Leaflet must have an initial view before addTo(map), otherwise paths have no
+  // SVG element when the data attributes and 36px interactive targets are wired.
+  map.setView([data.lat,data.lon],7);
   const carto=L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_2y8f_1_1ee5e3a872c91d0ebf5d7b88",{
     subdomains:"abcd",maxZoom:15,
     attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
