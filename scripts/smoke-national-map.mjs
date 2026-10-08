@@ -46,17 +46,22 @@ try{
   await context.route(/basemaps\.cartocdn\.com|gibs\.earthdata\.nasa\.gov|tile\.openstreetmap\.org/,route=>route.abort());
   const page=await context.newPage();
   await page.clock.install({time:new Date("2026-10-08T12:00:00-04:00")});
+  const fallbackRequests=[];
+  page.on("request",request=>{if(request.url().includes("tile.openstreetmap.org"))fallbackRequests.push(request.url());});
   await page.goto(base+"/fall-color/national/",{waitUntil:"domcontentloaded"});
   await page.waitForSelector('[data-region-marker="colorado-aspens"]',{timeout:18000});
   assert.equal(await page.locator("[data-region-marker]").count(),15,"all visible 9px markers");
   assert.equal(await page.locator("[data-region-hit]").count(),15,"all marker hit targets");
   const basemapButton=page.locator("#national-switch-basemap");
   assert.equal(await basemapButton.count(),1,"visitor has a direct map provider switch");
+  // CARTO may have already auto-failed over before this click. Normalize to
+  // CARTO, then explicitly switch to backup and verify a real OSM request.
+  if((await basemapButton.innerText()).includes("Use CARTO"))await basemapButton.click();
+  assert.match(await page.locator("#national-basemap-status").innerText(),/CARTO/);
   await basemapButton.click();
   assert.match(await page.locator("#national-basemap-status").innerText(),/OpenStreetMap/);
-  assert.ok((await page.locator('img.leaflet-tile[src*="tile.openstreetmap.org"]').count())>0,"backup basemap tile requested");
-  await basemapButton.click();
-  assert.match(await page.locator("#national-basemap-status").innerText(),/CARTO/);
+  await page.waitForTimeout(100);
+  assert.ok(fallbackRequests.length>0,"backup basemap tile requested");
 
   assert.equal(await page.locator('section[aria-labelledby="region-directory"] .card a').count(),15,"15 fallback links");
   assert.ok((await page.locator("#national-selected-date").innerText()).includes("October 8"),"today in season");
