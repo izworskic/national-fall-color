@@ -1,0 +1,49 @@
+name: National PhenoCam evidence audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lib/phenocam-national.js"
+      - "scripts/audit-national-phenocam.mjs"
+      - ".github/workflows/phenocam-audit.yml"
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Audit coverage for top five or all fifteen regions"
+        required: false
+        type: choice
+        options: [tier1, all]
+        default: tier1
+  schedule:
+    # Weekly during the 2026/2027 autumn, no automatic public foliage claims.
+    - cron: "20 14 * 9,10,11 1"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Evaluate real PhenoCam coverage (no scenic peak assertions)
+        env:
+          AUDIT_SCOPE: "${{ github.event.inputs.scope || 'tier1' }}"
+        run: |
+          if [ "$AUDIT_SCOPE" = "all" ]; then
+            node scripts/audit-national-phenocam.mjs --all
+          else
+            node scripts/audit-national-phenocam.mjs
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: national-phenocam-coverage
+          path: artifacts/national-fall-phenocam-audit.json
+          retention-days: 90
+          if-no-files-found: warn
