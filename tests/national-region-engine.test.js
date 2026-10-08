@@ -53,6 +53,9 @@ test("generator produces canonical indexable distinct pages and sitemap",()=>{
   assert.ok(s.includes('<link rel="canonical" href="https://chrisizworski.com/fall-color/'+r.id+'/">'));
   assert.ok(s.includes("api/national-fall-region"));
   assert.ok(s.includes("api/national-fall-observations"));
+  assert.ok(s.includes("api/national-fall-color"));
+  assert.ok(s.includes("Historical satellite autumn timing"));
+  assert.ok(s.includes("not interchangeable with the visual peak-color date"));
   assert.ok(!/<meta name="robots" content="noindex/.test(s));
  }
  const sitemap=fs.readFileSync("public/fall-color/national-sitemap.xml","utf8");
