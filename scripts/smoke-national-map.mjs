@@ -39,6 +39,12 @@ try{
     "CARTO must return a real keyed image tile, not just render empty overlay markers");
   assert.equal(await liveMap.locator("[data-region-marker]").count(),15);
   assert.match(await liveMap.locator("#national-basemap-status").innerText(),/CARTO Voyager/);
+  // Test the manual selector with working tiles, separately from the outage test.
+  const realSwitch=liveMap.locator("#national-switch-basemap");
+  await realSwitch.click();
+  assert.match(await liveMap.locator("#national-basemap-status").innerText(),/OpenStreetMap/);
+  await realSwitch.click();
+  assert.match(await liveMap.locator("#national-basemap-status").innerText(),/CARTO/);
   await online.close();
 
   // Simulate a real outage of both tile providers: region interaction must remain usable.
@@ -52,17 +58,11 @@ try{
   await page.waitForSelector('[data-region-marker="colorado-aspens"]',{timeout:18000});
   assert.equal(await page.locator("[data-region-marker]").count(),15,"all visible 9px markers");
   assert.equal(await page.locator("[data-region-hit]").count(),15,"all marker hit targets");
-  const basemapButton=page.locator("#national-switch-basemap");
-  assert.equal(await basemapButton.count(),1,"visitor has a direct map provider switch");
-  // CARTO may have already auto-failed over before this click. Normalize to
-  // CARTO, then explicitly switch to backup and verify a real OSM request.
-  if((await basemapButton.innerText()).includes("Use CARTO"))await basemapButton.click();
-  assert.match(await page.locator("#national-basemap-status").innerText(),/CARTO/);
-  await basemapButton.click();
+  // Both providers deliberately blocked: ensure automatic fallback activates.
+  assert.equal(await page.locator("#national-switch-basemap").count(),1);
+  await page.waitForTimeout(400);
+  assert.ok(fallbackRequests.length>0,"automatic OSM fallback requested tiles when CARTO failed");
   assert.match(await page.locator("#national-basemap-status").innerText(),/OpenStreetMap/);
-  await page.waitForTimeout(100);
-  assert.ok(fallbackRequests.length>0,"backup basemap tile requested");
-
   assert.equal(await page.locator('section[aria-labelledby="region-directory"] .card a').count(),15,"15 fallback links");
   assert.ok((await page.locator("#national-selected-date").innerText()).includes("October 8"),"today in season");
   assert.equal(await page.locator('input#national-date-slider').getAttribute("max"),"98","Sept-Dec coverage");
