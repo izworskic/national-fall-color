@@ -192,11 +192,31 @@
   }
   slider.addEventListener("input",()=>{
     selected=dates[Number(slider.value)]||dates[0];
+    offSeason=false;
     renderDate();
   });
   if(reset)reset.addEventListener("click",()=>{
-    if(!dates.includes(today))return;
-    selected=today;slider.value=String(dates.indexOf(today));renderDate();
+    if(calendarOffSeason){
+      dates=M.seasonDates(year);
+      slider.max=String(dates.length-1);
+      slider.value=String(dates.length-1);
+      selected=dates[dates.length-1];
+      offSeason=true;
+    }else{
+      selected=today;
+      slider.value=String(dates.indexOf(today));
+      offSeason=false;
+    }
+    renderDate();
+  });
+  if(next)next.addEventListener("click",()=>{
+    if(!calendarOffSeason)return;
+    dates=M.seasonDates(year+1);
+    slider.max=String(dates.length-1);
+    slider.value="0";
+    selected=dates[0];
+    offSeason=false;
+    renderDate();
   });
   try{buildMap();}catch(e){
     if(map)map.remove();
