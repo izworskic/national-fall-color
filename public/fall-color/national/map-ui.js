@@ -60,6 +60,7 @@
     for(const [id,row] of markerRows){
       const s=M.stageFor(row.region,selected);
       row.marker.setStyle({color:s.color,fillColor:s.color});
+      row.marker.getElement()?.setAttribute("data-stage",s.id);
       row.washes.forEach((circle,i)=>circle.setStyle({fillColor:s.color,fillOpacity:M.washAlpha(s.id)*[0.40,0.7,1][i]}));
       row.hit.setPopupContent(details(row.region));
     }
@@ -115,7 +116,10 @@
       }).addTo(washes));
       const marker=L.circleMarker([region.lat,region.lon],{radius:9,color:state.color,weight:2,fillColor:state.color,fillOpacity:.58,interactive:false}).addTo(pins);
       // Invisible touch target gives 36px hit area without changing Michigan's visible 9px marker.
+      marker.getElement()?.setAttribute("data-region-marker",region.id);
+      marker.getElement()?.setAttribute("data-stage",state.id);
       const hit=L.circleMarker([region.lat,region.lon],{radius:18,weight:0,opacity:0,fillOpacity:0,interactive:true,bubblingMouseEvents:false}).addTo(pins);
+      hit.getElement()?.setAttribute("data-region-hit",region.id);
       hit.bindPopup(details(region),{maxWidth:275,minWidth:200,autoPan:true,autoPanPadding:[20,20],closeButton:true});
       hit.on("popupopen",()=>{lastOpened=region.id;showWeather(region,hit);});
       hit.on("popupclose",()=>{if(lastOpened===region.id)lastOpened=null;});
