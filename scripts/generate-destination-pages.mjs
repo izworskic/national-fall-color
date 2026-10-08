@@ -40,6 +40,42 @@ for(const g of guides){
 }
 for(const r of regions)if(counts[r.id]!==2)throw Error("Missing local pair "+r.id);
 const byRegion=Object.fromEntries(regions.map(r=>[r.id,all.filter(g=>g.region===r.id)]));
+// Existing eight city-focused pages already preset the national live decision
+// engine. Connect those users to real named places; do NOT duplicate them.
+const cityNetwork={
+ "stowe-vt":{region:"new-england",name:"Stowe",context:"Stowe is a Vermont mountain base. These are other New England destinations, not necessarily short drives from town."},
+ "north-conway-nh":{region:"new-england",name:"North Conway",context:"North Conway is an excellent gateway for the Kancamagus Highway; Acadia is a separate Maine trip, not a same-day nearby stop."},
+ "bar-harbor-me":{region:"new-england",name:"Bar Harbor",context:"Bar Harbor connects directly to Acadia's Park Loop Road. The White Mountains are a separate inland fall-color journey."},
+ "asheville-nc":{region:"great-smoky-mountains",name:"Asheville",context:"Asheville is a western North Carolina base. The Smokies are a separate destination whose elevation and access need their own checks."},
+ "gatlinburg-tn":{region:"great-smoky-mountains",name:"Gatlinburg",context:"Compare a high-elevation Smokies drive with a slower Cades Cove valley visit before choosing your day."},
+ "lake-placid-ny":{region:"adirondacks",name:"Lake Placid",context:"Lake Placid offers two very different nearby Adirondack decisions: summit-highway access or a notch-road drive."},
+ "breckenridge-co":{region:"colorado-aspens",name:"Breckenridge",context:"These are distinct Colorado aspen trips—not local Breckenridge stops. High-pass surface conditions and advance reservations matter."},
+ "shenandoah-va":{region:"shenandoah",name:"Shenandoah / Luray",context:"From the Luray side, compare Skyline Drive's overlooks with the more place-focused Big Meadows outing."}
+};
+const gatewayForGuide={
+ "kancamagus-highway":["north-conway-nh"],
+ "acadia-park-loop-road":["bar-harbor-me"],
+ "cades-cove":["gatlinburg-tn"],
+ "newfound-gap-road":["gatlinburg-tn"],
+ "whiteface-memorial-highway":["lake-placid-ny"],
+ "wilmington-notch":["lake-placid-ny"],
+ "skyline-drive-central":["shenandoah-va"],
+ "big-meadows":["shenandoah-va"]
+};
+const displayNames={
+ "maroon-bells-aspen-color":"Maroon Bells / Maroon Creek",
+ "lost-maples":"Lost Maples State Natural Area",
+ "acadia-park-loop-road":"Acadia National Park Loop Road",
+ "cades-cove":"Cades Cove",
+ "peninsula-state-park":"Peninsula State Park",
+ "skyline-drive-central":"Skyline Drive Central District"
+};
+const miles=(a,b)=>{
+ const rad=Math.PI/180,dl=(b.lat-a.lat)*rad,doLon=(b.lon-a.lon)*rad;
+ const q=Math.sin(dl/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(doLon/2)**2;
+ return 3958.8*2*Math.asin(Math.min(1,Math.sqrt(q)));
+};
+
 const css="*{box-sizing:border-box}html{overflow-x:hidden}body{margin:0;background:#f7f2e8;color:#302820;font:16px/1.62 system-ui,-apple-system,Segoe UI,sans-serif;overflow-wrap:anywhere}a{color:#31533d;text-underline-offset:3px}.top{background:#fffaf1;border-bottom:1px solid #d9cdbb}.shell{max-width:890px;margin:0 auto;padding:20px}.top .shell{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}.top nav{display:flex;flex-wrap:wrap;gap:14px;font-size:13px}main.shell{padding-top:22px;padding-bottom:48px}.crumb{font-size:12px;color:#61564b}.kicker{font-size:11px;letter-spacing:.13em;font-weight:800;color:#87603a;text-transform:uppercase;margin-top:16px}h1,h2,h3{font-family:Georgia,serif;line-height:1.18}h1{font-size:clamp(30px,6vw,48px);margin:9px 0 14px}h2{font-size:25px;margin:28px 0 9px}h3{font-size:18px}.lead{font-size:18px;max-width:790px;color:#51483f}.card{padding:18px;background:#fffdfa;border:1px solid #d9cdbb;border-radius:14px;margin:16px 0}.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:15px}.label{display:block;font-size:11px;letter-spacing:.12em;font-weight:800;color:#786242;text-transform:uppercase}.stage{font:600 23px/1.25 Georgia,serif;color:#31533d;margin:8px 0}.muted{font-size:13px;color:#61564b}.answer{border-left:4px solid #31533d;padding-left:14px}.answer strong{font-size:18px}.controls{display:flex;align-items:center;flex-wrap:wrap;gap:9px}.controls input{font:inherit;max-width:100%;min-height:46px;border:1px solid #b6aa98;border-radius:8px;padding:9px}.controls label{font-weight:700;font-size:13px}.controls button,.links a{display:inline-block;min-height:44px;padding:11px 14px;border-radius:8px;border:1px solid #31533d;background:#31533d;color:white;text-decoration:none;font:700 13px system-ui,sans-serif;cursor:pointer}.controls button[hidden]{display:none}.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}.warning{border-left:3px solid #ac6739;background:#fcf3e6;padding:8px 15px}.network{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.network a{padding:14px;border:1px solid #d9cdbb;border-radius:10px;background:#fffdfa;text-decoration:none;font-weight:700;font-size:14px}.network small{display:block;color:#61564b;font-weight:400}footer{border-top:1px solid #d9cdbb;font-size:13px;color:#61564b}:focus-visible{outline:3px solid #9e613a;outline-offset:2px}@media(max-width:650px){.shell{padding-left:15px;padding-right:15px}.grid,.network{grid-template-columns:1fr}.card{padding:15px}h2{font-size:23px}}";
 function client(){
  "use strict";
@@ -66,8 +102,9 @@ function page(g){
  const r=regionById[g.region],canonical=url(g.region,g.slug),regionLink=regionUrl(g.region);
  const start=human(state.isoFromDoy(2027,g.peak[0])),end=human(state.isoFromDoy(2027,g.peak[1]));
  const window=start+"–"+end;
- const title=g.name+" Fall Color: Peak Timing and Visit Guide | Chris Izworski";
- const desc=("When to see "+g.name+" fall colors, what makes this place special, access cautions and nearby alternatives in "+r.name+".").slice(0,155);
+ const publicName=displayNames[g.slug]||g.name;
+ const title=publicName+" Fall Color: Peak Timing and Visit Guide | Chris Izworski";
+ const desc=("When to see "+publicName+" fall colors, what makes this place special, access cautions and nearby alternatives in "+r.name+".").slice(0,155);
  const graph=[
  {"@type":"WebPage","@id":canonical+"#webpage",url:canonical,name:title,description:desc,inLanguage:"en-US",isAccessibleForFree:true,datePublished:"2026-10-08",dateModified:"2026-10-08",author:{"@id":"https://chrisizworski.com/#person"},about:{"@id":canonical+"#place"}},
  {"@type":"Place","@id":canonical+"#place",name:g.name,geo:{"@type":"GeoCoordinates",latitude:g.lat,longitude:g.lon}},
@@ -78,11 +115,12 @@ function page(g){
  {"@type":"ListItem",position:4,name:g.name,item:canonical}]}
  ];
  const other=byRegion[g.region].filter(x=>x.slug!==g.slug);
- const neighbors=regions.filter(x=>x.id!==g.region).map(x=>({r:x,d:Math.hypot(x.lat-r.lat,x.lon-r.lon)})).sort((a,b)=>a.d-b.d).slice(0,2);
+ const neighbors=regions.filter(x=>x.id!==g.region).map(x=>({r:x,d:miles(x,r)}))
+  .filter(x=>x.d<=250).sort((a,b)=>a.d-b.d).slice(0,2);
  const linked=other.map(x=>'<a href="'+url(x.region,x.slug)+'">'+esc(x.name)+'<small>'+esc(x.experience.split(".")[0])+'.</small></a>').join("")+
   '<a href="'+regionLink+'">Regional fall-color planner<small>Compare all dates, roads and viewing points in '+esc(r.name)+'</small></a>'+
   '<a href="/fall-color/national/">All 15 fall-color regions<small>Statewide and national timing comparison</small></a>'+
-  neighbors.map(x=>'<a href="'+regionUrl(x.r.id)+'">'+esc(x.r.name)+'<small>Nearby regional color timing comparison</small></a>').join("");
+  neighbors.map(x=>'<a href="'+regionUrl(x.r.id)+'">'+esc(x.r.name)+'<small>Another regional color timing comparison; travel time not calculated</small></a>').join("");
  const sourceLinks=[
  [g.official,"Destination and visitor reference"],
  [g.timing.sourceUrl,"Regional historical foliage progression"],
@@ -95,7 +133,7 @@ function page(g){
  '<script type="application/ld+json">'+json({"@context":"https://schema.org","@graph":graph})+'</script><style>'+css+'</style></head><body>'+
  '<header class="top"><div class="shell"><a href="/">Chris Izworski</a><nav><a href="/fall-color/">Michigan fall color</a><a href="/fall-color/national/">U.S. map</a><a href="'+regionLink+'">'+esc(r.name)+'</a></nav></div></header>'+
  '<main class="shell"><div class="crumb"><a href="/fall-color/national/">U.S. Fall Color</a> / <a href="'+regionLink+'">'+esc(r.name)+'</a> / '+esc(g.name)+'</div><div class="kicker">Destination fall-color field guide</div>'+
- '<h1>When to see fall color at '+esc(g.name)+'</h1><p class="lead">'+esc(g.experience)+'</p>'+
+ '<h1>When to see fall color at '+esc(publicName)+'</h1><p class="lead">'+esc(g.experience)+'</p>'+
  '<div class="grid"><section class="card"><span class="label">Typical viewing-area color window · not live</span><div class="stage">'+esc(window)+'</div>'+
  '<p class="muted">Geography-specific approximate seasonal timing based on '+esc(g.timing.area)+'. These are illustrative windows, not measured peak dates or a live point-level leaf report.</p>'+
  '<div class="controls"><label for="guide-date">Check your date</label><input type="date" id="guide-date"><button id="preview-next" type="button" hidden>Preview next fall</button></div>'+
@@ -103,7 +141,7 @@ function page(g){
  '<aside class="card"><span class="label">Choose the trip, not just a date</span><h2 style="margin:8px 0">Can I go?</h2><p>A promising fall-color window does not establish road access, park admission, parking or trail safety. Verify official rules and check current weather.</p>'+
  '<div class="links"><a href="'+regionLink+'">Compare the region</a><a href="'+esc(g.access)+'" rel="noopener noreferrer">Verify access ↗</a></div>'+
  '<p class="muted">Map point is an approximate scenic corridor or viewing area, not a parking-lot coordinate or driving route.</p></aside></div>'+
- '<h2>What makes '+esc(g.name)+' special?</h2><p>'+esc(g.experience)+'</p>'+
+ ''+
  '<h2>How to plan the visit</h2><p>'+esc(g.plan)+'</p>'+
  '<h2>Road, park and safety checks</h2><div class="warning"><p>'+esc(g.caution)+'</p></div>'+
  '<h2>If the color or access does not line up</h2><p>'+esc(g.alternative)+'</p>'+
@@ -114,7 +152,8 @@ function page(g){
  '<h3>What should I see instead?</h3><p>'+esc(g.alternative)+'</p>'+
  '<section class="card"><h2 style="margin-top:0">Sources and current-condition checks</h2>'+sourceLinks+
  '<p class="muted">Source links are provided for independent verification. The modeled season is not presented as an individual sensor or observed leaf percentage.</p></section>'+
- '<section><h2>Explore the local fall-color network</h2><div class="network">'+linked+'</div></section>'+
+ '<section><h2>Explore the local fall-color network</h2><div class="network">'+linked+'</div></section>'+ 
+ (gatewayForGuide[g.slug]||[]).map(key=>'<p class="muted"><a href="/national-tools/fall-color/'+key+'/">Also compare the city forecast for '+esc(cityNetwork[key].name)+'</a>. This is a regional context forecast, not a point observation at '+esc(publicName)+'.</p>').join("")+
  '<script type="application/json" id="guide-timing">'+json({peak:g.peak,name:g.name})+'</script></main>'+
  '<footer><div class="shell">Researched field guide by <a href="/chris-izworski/">Chris Izworski</a>. <a href="/fall-color/">Michigan’s separate live foliage engine</a> is unchanged.</div></footer>'+
  '<script>('+client.toString()+')();</script></body></html>';
