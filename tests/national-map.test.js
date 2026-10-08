@@ -29,7 +29,7 @@ test("chronological stage curve varies Sept-Nov and separates before from after"
     ["colorado-aspens","2026-09-20","peak"],
     ["colorado-aspens","2026-10-20","past"],
     ["new-england","2026-10-08","peak"],
-    ["new-england","2026-11-12","past"],
+    ["new-england","2026-11-12","bare"],
     ["texas-hill-country","2026-09-20","green"],
     ["texas-hill-country","2026-11-17","peak"],
     ["texas-hill-country","2026-12-06","past"]
@@ -46,8 +46,9 @@ test("chronological stage curve varies Sept-Nov and separates before from after"
       M.stageFor(r,M.isoFromDoy(year,r.peak[1]+10)).id);
   }
 });
-test("all 7 Michigan palette colors preserved; low-opacity 3-ring wash",()=>{
-  assert.deepEqual(M.stages.map(s=>s.color),["#4A6633","#5A6B3A","#8E6410","#9E5F13","#9C4E27","#8E301C","#75512F"]);
+test("Michigan palette retained with progressive autumn fade and subdued winter",()=>{
+  assert.deepEqual(M.stages.slice(0,6).map(s=>s.color),["#4A6633","#5A6B3A","#8E6410","#9E5F13","#9C4E27","#8E301C"]);
+  assert.deepEqual(M.stages.slice(6).map(s=>s.id),["fading","past","bare","offseason"]);
   assert.ok(M.washAlpha("peak")<=.20);
   assert.ok(M.washAlpha("past")<M.washAlpha("peak"));
   const ui=fs.readFileSync(uiPath,"utf8");
@@ -71,7 +72,9 @@ test("today or forthcoming season date slider spans western aspens and late Texa
   assert.equal(dates.length,99);
   assert.equal(M.initialDate(new Date(2026,9,8,10),dates),"2026-10-08");
   assert.equal(M.initialDate(new Date(2026,5,1,10),dates),"2026-09-01");
-  assert.equal(M.seasonYear(new Date(2026,11,20,12)),2027);
+  assert.equal(M.seasonYear(new Date(2026,11,20,12)),2026);
+  assert.equal(M.seasonYear(new Date(2027,0,10,12)),2026);
+  assert.equal(M.seasonYear(new Date(2027,8,10,12)),2027);
   assert.equal(M.initialDate(new Date(2026,11,20,12),M.seasonDates(2027)),"2027-09-01");
   assert.equal(M.doyFromIso("2028-03-01"),61);
   assert.throws(()=>M.doyFromIso("2026-09-31"));

@@ -15,11 +15,16 @@
     status.textContent="Regional map data is unavailable. Use the region directory below.";return;
   }
   const now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
-  const year=M.seasonYear(now),dates=M.seasonDates(year);
-  let selected=M.initialDate(now,dates),map=null,lastOpened=null;
+  const year=M.seasonYear(now);
+  let dates=M.seasonDates(year);
+  const calendarOffSeason=!dates.includes(today);
+  let offSeason=calendarOffSeason;
+  let selected=offSeason?dates[dates.length-1]:M.initialDate(now,dates),map=null,lastOpened=null;
+  const regionStage=region=>offSeason?M.offSeasonStage(region,year):M.stageFor(region,selected);
   const markerRows=new Map(),weatherCache=new Map();
   const labels=document.getElementById("national-selected-date");
   const reset=document.getElementById("national-reset-date");
+  const next=document.getElementById("national-preview-next");
   const shortlist=document.getElementById("national-color-now");
   const dateText=iso=>new Date(iso+"T12:00:00Z").toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric",timeZone:"UTC"});
   const shortDate=iso=>new Date(iso+"T12:00:00Z").toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"});
@@ -28,7 +33,7 @@
      Math.floor((Date.parse(selected+"T12:00:00Z")-Date.parse(today+"T12:00:00Z"))/86400000)<=7;
   slider.min="0";slider.max=String(dates.length-1);slider.step="1";slider.value=String(dates.indexOf(selected));
   function details(region){
-    const s=M.stageFor(region,selected);
+    const s=regionStage(region);
     return '<div class="map-popup"><strong>'+escape(region.name)+'</strong>'+
       '<span class="map-popup-stage" style="color:'+s.color+'">'+escape(s.label)+'</span>'+
       '<p><b>Modeled seasonal stage.</b> Based on typical regional timing; not a live leaf-color reading or observed percentage.</p>'+
@@ -38,12 +43,12 @@
       '<a class="map-popup-cta" href="/fall-color/'+encodeURIComponent(region.id)+'/">Plan this region →</a></div>';
   }
   function updateShortlist(){
-    const active=regions.filter(r=>M.stageFor(r,selected).id==="peak");
-    const target=active.length?active:regions.slice().sort((a,b)=>Math.abs(M.doyFromIso(selected)-(a.peak[0]+a.peak[1])/2)-Math.abs(M.doyFromIso(selected)-(b.peak[0]+b.peak[1])/2)).slice(0,3);
+    const active=offSeason?[]:regions.filter(r=>regionStage(r).id==="peak");
+    const target=offSeason?[]:active.length?active:regions.slice().sort((a,b)=>Math.abs(M.doyFromIso(selected)-(a.peak[0]+a.peak[1])/2)-Math.abs(M.doyFromIso(selected)-(b.peak[0]+b.peak[1])/2)).slice(0,3);
     if(!shortlist)return;
     shortlist.replaceChildren();
     const b=document.createElement("strong");
-    b.textContent=active.length?"Within their typical peak windows: ":"Closest typical peak windows: ";
+    b.textContent=offSeason?"Season complete · "+year+". Preview next fall or review a date.":active.length?"Within their typical peak windows: ":"Closest typical peak windows: ";
     shortlist.append(b);
     target.forEach((r,i)=>{
       if(i)shortlist.append(document.createTextNode(" · "));
@@ -52,13 +57,16 @@
     });
   }
   function renderDate(){
-    labels.textContent=dateText(selected)+(selected===today?" · Today":" · Seasonal preview");
-    slider.setAttribute("aria-valuetext",dateText(selected));
-    if(reset){reset.disabled=selected===today||!dates.includes(today);reset.title=dates.includes(today)?"Return to today":"Today is outside this foliage season";}
-    status.textContent="All 15 regions show modeled seasonal stages for "+dateText(selected)+". These are not observed leaf-color percentages.";
+    labels.textContent=offSeason?"Season complete · "+year:dateText(selected)+(selected===today?" · Today":" · Seasonal preview");
+    slider.setAttribute("aria-valuetext",offSeason?"Season complete; choose a fall date or preview next fall":dateText(selected));
+    if(reset){reset.disabled=offSeason||(!calendarOffSeason&&selected===today);reset.textContent=calendarOffSeason?"Season status":"Today";}
+    if(next){next.hidden=!calendarOffSeason;next.textContent="Preview fall "+(year+1);}
+    status.textContent=offSeason
+      ?"Season complete · subdued gray-brown markers for all 15 regions. Review last fall or preview fall "+(year+1)+". No live foliage observations implied."
+      :"All 15 regions show modeled seasonal stages for "+dateText(selected)+". These are not observed leaf-color percentages.";
     updateShortlist();
     for(const [id,row] of markerRows){
-      const s=M.stageFor(row.region,selected);
+      const s=regionStage(row.region);
       row.marker.setStyle({color:s.color,fillColor:s.color});
       row.marker.getElement()?.setAttribute("data-stage",s.id);
       row.washes.forEach((circle,i)=>circle.setStyle({fillColor:s.color,fillOpacity:M.washAlpha(s.id)*[0.40,0.7,1][i]}));
@@ -152,7 +160,7 @@
     const washes=L.layerGroup().addTo(map),pins=L.layerGroup().addTo(map);
     L.control.layers({"CARTO streets":streets,"OpenStreetMap backup":osm,"NASA satellite":imagery},{"Foliage color wash":washes,"Region markers":pins},{collapsed:true}).addTo(map);
     regions.forEach(region=>{
-      const state=M.stageFor(region,selected);
+      const state=regionStage(region);
       const ringRadii=[112000,67000,32000];
       const rings=ringRadii.map((radius,i)=>L.circle([region.lat,region.lon],{
         radius,stroke:false,fillColor:state.color,fillOpacity:M.washAlpha(state.id)*[.40,.70,1][i],interactive:false
@@ -184,11 +192,31 @@
   }
   slider.addEventListener("input",()=>{
     selected=dates[Number(slider.value)]||dates[0];
+    offSeason=false;
     renderDate();
   });
   if(reset)reset.addEventListener("click",()=>{
-    if(!dates.includes(today))return;
-    selected=today;slider.value=String(dates.indexOf(today));renderDate();
+    if(calendarOffSeason){
+      dates=M.seasonDates(year);
+      slider.max=String(dates.length-1);
+      slider.value=String(dates.length-1);
+      selected=dates[dates.length-1];
+      offSeason=true;
+    }else{
+      selected=today;
+      slider.value=String(dates.indexOf(today));
+      offSeason=false;
+    }
+    renderDate();
+  });
+  if(next)next.addEventListener("click",()=>{
+    if(!calendarOffSeason)return;
+    dates=M.seasonDates(year+1);
+    slider.max=String(dates.length-1);
+    slider.value="0";
+    selected=dates[0];
+    offSeason=false;
+    renderDate();
   });
   try{buildMap();}catch(e){
     if(map)map.remove();

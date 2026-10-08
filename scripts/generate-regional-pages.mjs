@@ -140,6 +140,10 @@ const regionalMapStyles=String.raw`
 #regional-selected-date{font-size:16px;font-weight:800}
 #regional-reset-date{min-height:44px;padding:8px 13px;border:1px solid #baad94;border-radius:8px;background:#e8e0d1;color:#2b3026;cursor:pointer}
 #regional-reset-date:disabled{opacity:.45;cursor:default}
+#regional-preview-next{min-height:44px;border:1px solid #8e6844;background:#f7ede0;color:#513b2b;font:700 13px system-ui,sans-serif;border-radius:8px;padding:10px 13px;cursor:pointer;margin:7px 0}
+#regional-preview-next[hidden]{display:none}
+#regional-preview-next:focus-visible{outline:3px solid #9c4e27;outline-offset:2px}
+
 #regional-date-slider{display:block;width:100%;max-width:100%;min-height:34px;margin:11px 0 4px;accent-color:#9c4e27}
 .regional-map-date-ends{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#686358}
 .regional-map-meta{font-size:12px;line-height:1.55;color:#625c50;margin:9px 0 0}
@@ -219,6 +223,7 @@ function regionalMapSection(r){
     <div class="regional-map-controls"><div class="regional-map-date-row">
     <label for="regional-date-slider" id="regional-selected-date">Choose a fall date</label>
     <button type="button" id="regional-reset-date">Today</button></div>
+    <button type="button" id="regional-preview-next" hidden>Preview next fall</button>
     <input type="range" id="regional-date-slider" min="0" max="98" value="0" step="1" aria-label="Preview regional fall foliage seasonal stage">
     <div class="regional-map-date-ends"><span>September 1</span><span>December 8</span></div>
     <p class="regional-map-meta" id="regional-map-status" role="status" aria-live="polite">Loading historical seasonal stage…</p>
@@ -275,6 +280,9 @@ const mapStyles=String.raw`
 #national-selected-date{font-weight:750;font-size:17px}
 #national-reset-date{background:#e8e0d1;border:1px solid #baad94;border-radius:8px;min-height:44px;padding:8px 13px;color:#2b3026;font-weight:700;cursor:pointer}
 #national-reset-date:disabled{opacity:.45;cursor:default}
+#national-preview-next{min-height:44px;padding:9px 13px;margin:6px 0 2px;border:1px solid #8e6844;border-radius:8px;background:#f7ede0;color:#513b2b;font-weight:700;cursor:pointer}
+#national-preview-next[hidden]{display:none}
+#national-preview-next:focus-visible{outline:3px solid #9c4e27;outline-offset:2px}
 #national-date-slider{display:block;width:100%;max-width:100%;margin:12px 0 4px;accent-color:#9c4e27;min-height:34px;cursor:pointer}
 .national-date-ends{display:flex;justify-content:space-between;font-size:12px;color:#6a6458}
 .national-map-legend{display:flex;flex-wrap:wrap;gap:7px 13px;margin:14px 0 8px}
@@ -306,6 +314,7 @@ const mapSection=`<section class="section national-map-shell" aria-labelledby="n
 <div id="national-map" role="region" aria-label="Map of 15 United States fall foliage regions"></div>
 <div class="national-map-controls">
 <div class="national-map-date-row"><label for="national-date-slider" id="national-selected-date">Select a fall date</label><button id="national-reset-date" type="button">Today</button></div>
+<button id="national-preview-next" type="button" hidden>Preview next fall</button>
 <input type="range" id="national-date-slider" min="0" max="98" value="0" step="1" aria-label="Preview fall foliage by date">
 <div class="national-date-ends"><span>September 1</span><span>December 8 · Texas and late-season color</span></div>
 <div class="national-map-legend" aria-label="Foliage stage legend">
