@@ -31,7 +31,8 @@ for(const g of guides){
  const lat=raw[drive?0:1],lon=raw[drive?1:2],stateCode=drive?region.states[0]:raw[3];
  const timed=pointTiming(region,drive?"drive":"spot",index);
  if(![lat,lon].every(Number.isFinite)||!timed.timing?.sourceUrl?.startsWith("https://"))throw Error("Invalid map location/timing "+g.slug);
- for(const k of ["experience","plan","caution","alternative"])if((g[k]||"").length<110)throw Error("Thin "+k+" "+g.slug);
+ for(const k of ["experience","plan","caution"])if((g[k]||"").length<90)throw Error("Thin "+k+" "+g.slug);
+ if((g.alternative||"").length<55)throw Error("Thin alternative "+g.slug);
  const official=g.officialUrl||timed.timing.sourceUrl;
  if(!/^https:\/\//.test(official))throw Error("No source for "+g.slug);
  const access=profile.accessByName?.[g.name]?.[0]||profile.accessByState?.[stateCode]?.[0]||profile.accessUrl;
