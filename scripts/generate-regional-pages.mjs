@@ -273,9 +273,9 @@ const dayPlannerStyles=String.raw`
 function dayPlannerSection(r){
  if(!dayProfiles[r.id])return "";
  return `<section class="section fall-day-shell" aria-labelledby="fall-day-heading">
- <div class="kicker">Plan the day · new decision tool</div>
+ <div class="kicker">Plan the day · regional decision tool</div>
  <h2 id="fall-day-heading">Where should you go for fall color?</h2>
- <p class="lede">Pick a fall date, a starting place and the kind of outing you want. Compare local timing across this region—not one shared peak date.</p>
+ <p class="lede">Pick a fall date, starting town and outing style. ${esc(r.why)} Recommendations compare each mapped place’s typical timing, not measured live leaf color.</p>
  <form id="fall-day-form" class="fall-day-form">
  <div class="fall-day-field"><label for="fall-day-date">Your date</label><input type="date" id="fall-day-date" required></div>
  <div class="fall-day-field"><label for="fall-day-start">Starting from</label><select id="fall-day-start"><option value="">Compare the whole region</option></select></div>
