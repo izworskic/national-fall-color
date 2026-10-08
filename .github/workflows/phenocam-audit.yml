@@ -1,5 +1,11 @@
 name: National PhenoCam evidence audit
 on:
+  push:
+    branches: [main]
+    paths:
+      - "lib/phenocam-national.js"
+      - "scripts/audit-national-phenocam.mjs"
+      - ".github/workflows/phenocam-audit.yml"
   workflow_dispatch:
     inputs:
       scope:
