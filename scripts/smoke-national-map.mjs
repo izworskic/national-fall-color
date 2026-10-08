@@ -7,6 +7,7 @@ import path from "node:path";
 import {chromium} from "playwright";
 import {createRequire} from "node:module";
 const {regions}=createRequire(import.meta.url)("../lib/national-region-catalog.js");
+const {viewingSpots}=createRequire(import.meta.url)("../lib/national-regional-viewing-spots.js");
 
 const root=path.resolve("public");
 const types={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".json":"application/json",".css":"text/css; charset=utf-8",".png":"image/png",".svg":"image/svg+xml",".jpg":"image/jpeg"};
@@ -67,6 +68,12 @@ try{
   console.log("REGIONAL_MAP_DIAG",JSON.stringify({regionalDiagnose,regionalErrors}));
   await liveMap.waitForSelector('[data-regional-drive="1"]',{state:"attached",timeout:5000});
   assert.equal(await liveMap.locator("[data-regional-drive]").count(),4);
+  assert.equal(await liveMap.locator("[data-regional-spot]").count(),4,"Colorado gained four relevant viewing locations");
+  const coloradoSpot=liveMap.locator('[data-regional-spot-hit="1"]');
+  await coloradoSpot.dispatchEvent("click");
+  await liveMap.locator(".regional-map-popup .regional-map-cta").waitFor({timeout:5000});
+  assert.equal(await liveMap.locator(".regional-map-popup .regional-map-cta").getAttribute("href"),"#viewing-1");
+
   await liveMap.waitForSelector('img.leaflet-tile-loaded[src*="basemaps.cartocdn.com"]',{timeout:18000});
   assert.ok(tileResponses.slice(priorTileResponses).some(t=>t.status===200&&t.type.includes("image/")&&t.url.includes("?key=cb1_")),
     "regional map must render a real Michigan-keyed CARTO image tile");
@@ -137,8 +144,24 @@ try{
   await staticPage.goto(base+"/fall-color/national/");
   assert.equal(await staticPage.locator('section[aria-labelledby="region-directory"] .card a').count(),15,"no-JS directory");
   await noJs.close();
-  // Acceptance-gate *every* generated region at the mobile baseline.
-  let regionPins=0;
+  // New England should present a rich but navigable distribution of high-interest
+  // locations, with a state zoom selector for tightly clustered Vermont/NH sites.
+  const ne=await context.newPage();
+  await ne.goto(base+"/fall-color/new-england/",{waitUntil:"domcontentloaded"});
+  await ne.waitForSelector('[data-regional-spot="1"]',{timeout:12000});
+  assert.equal(await ne.locator("[data-regional-spot]").count(),16,"16 additional New England viewing areas");
+  assert.equal(await ne.locator("[data-regional-drive]").count(),4,"existing four New England drives retained");
+  await ne.locator("#regional-area-picker").selectOption("VT");
+  assert.equal(await ne.locator("#regional-area-picker").inputValue(),"VT","state focus works");
+  await ne.locator('[data-regional-spot-pick="6"]').click();
+  await ne.locator(".regional-map-popup .regional-map-cta").waitFor({timeout:5000});
+  assert.equal(await ne.locator(".regional-map-popup .regional-map-cta").getAttribute("href"),"#viewing-6");
+  assert.equal(await ne.locator(".regional-map-popup").getByText(/not a current reading here/i).count(),1);
+  const neWidth=await ne.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
+  assert.ok(neWidth[0]<=neWidth[1]+1,"New England expanded map no horizontal overflow");
+  await ne.close();
+    // Acceptance-gate *every* generated region at the mobile baseline.
+  let regionPins=0,viewingPins=0;
   for(const region of regions){
     const rp=await context.newPage();
     await rp.goto(base+"/fall-color/"+region.id+"/",{waitUntil:"domcontentloaded"});
@@ -150,12 +173,17 @@ try{
     assert.ok((await rp.locator("#regional-map-status").innerText()).includes("seasonal estimate"),region.id+" no invented live data");
     const dimensions=await rp.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
     assert.ok(dimensions[0]<=dimensions[1]+1,region.id+" mobile horizontal overflow "+dimensions.join("/"));
+    const spots=await rp.locator("[data-regional-spot]").count();
+    assert.equal(spots,viewingSpots[region.id].length,region.id+" researched viewing places");
+    assert.equal(await rp.locator("[data-regional-spot-hit]").count(),spots,region.id+" viewing tap targets");
+    viewingPins+=spots;
     regionPins+=n;
     await rp.close();
   }
   assert.equal(regionPins,49,"49 drive markers mapped across all 15 regions");
+  assert.equal(viewingPins,53,"53 additional research-backed points mapped");
   await context.close();
-  console.log("NATIONAL_MAP_BROWSER_PASS 390px; national-map=PASS; regional-maps=15; corridor-markers=49; keyed-CARTO-tiles=PASS; switches=PASS; regional-stage=PASS; regional-popup=PASS; tiles-offline=PASS; no-JS=PASS; overflow=0");
+  console.log("NATIONAL_MAP_BROWSER_PASS 390px; regional-maps=15; corridors=49; viewing-locations=53; new-england-spots=16; state-zoom=PASS; spot-popup=PASS; keyed-CARTO-tiles=PASS; switches=PASS; tiles-offline=PASS; no-JS=PASS; overflow=0");
 }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));
