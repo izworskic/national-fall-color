@@ -29,6 +29,9 @@ const sourceLabel=document.getElementById("regional-basemap-status");
 const note=document.getElementById("regional-map-fallback");
 let map,activeBase,cartoCount=0,cartoFailures=0,lastOpen=null;
 const rows=[];
+const spotRows=[];
+let lastOpenSpot=null;
+const areaPicker=document.getElementById("regional-area-picker");
 slider.min="0";slider.max=String(dates.length-1);slider.step="1";slider.value=String(dates.indexOf(selected));
 const stage=()=>state.stageFor(data,selected);
 function popup(d){
@@ -41,18 +44,39 @@ function popup(d){
     '. Not an observed reading for this individual drive.</p>'+
     '<a class="regional-map-cta" href="#drive-'+d.index+'">View drive '+d.index+' details →</a></div>';
 }
+function spotPopup(x){
+  const stateInfo=stage();
+  const source=(typeof x.sourceUrl==="string"&&x.sourceUrl.startsWith("https://"))?x.sourceUrl:null;
+  return '<div class="regional-map-popup"><strong>'+escape(x.name)+'</strong>'+
+    '<span class="regional-map-stage" style="color:'+stateInfo.color+'">'+escape(stateInfo.label)+'</span>'+
+    '<p><b>Viewing area · '+escape(x.state)+'</b> (approximate map location)</p>'+
+    '<p>'+escape(x.reason)+'</p>'+
+    '<p><b>Seasonal model for the broader region, not a current reading here.</b> Local elevations and coastal conditions can differ.</p>'+
+    '<a class="regional-map-cta" href="#viewing-'+x.index+'">View location details →</a>'+
+    (source?'<p><a href="'+escape(source)+'" target="_blank" rel="noopener noreferrer">Official regional travel or park reference ↗</a></p>':'')+
+    '</div>';
+}
 function render(){
   const s=stage();
   const text=fmt(selected)+(selected===today?" · Today":" · Seasonal preview");
   currentLabel.textContent=text;
   slider.setAttribute("aria-valuetext",text);
   if(reset)reset.disabled=!dates.includes(today)||selected===today;
-  status.textContent=s.label+" · Broad regional seasonal estimate for "+fmt(selected)+". All drive markers share this planning stage; local elevation and conditions vary.";
+  status.textContent=s.label+" · Broad regional seasonal estimate for "+fmt(selected)+". All dots use the same regional timing model; viewing locations are not individual leaf-color measurements.";
   for(const r of rows){
     r.pin.setStyle({color:s.color,fillColor:s.color});
     r.pin.getElement()?.setAttribute("data-stage",s.id);
     r.washes.forEach((w,i)=>w.setStyle({fillColor:s.color,fillOpacity:state.washAlpha(s.id)*[.40,.70,1][i]}));
     r.hit.setPopupContent(popup(r.drive));
+  }
+  for(const r of spotRows){
+    r.pin.setStyle({fillColor:s.color,color:"#ffffff"});
+    r.pin.getElement()?.setAttribute("data-stage",s.id);
+    r.hit.setPopupContent(spotPopup(r.place));
+  }
+  if(lastOpenSpot!==null){
+    const r=spotRows.find(x=>x.place.index===lastOpenSpot);
+    if(r&&r.hit.isPopupOpen())r.hit.getPopup()?.update();
   }
   if(lastOpen!==null){
     const r=rows.find(x=>x.drive.index===lastOpen);
@@ -77,6 +101,7 @@ try{
   });
   const washes=L.layerGroup().addTo(map);
   const pins=L.layerGroup().addTo(map);
+  const spotsLayer=L.layerGroup().addTo(map);
   activeBase=carto;
   function choose(layer,message){
     if(activeBase!==layer){
@@ -102,7 +127,7 @@ try{
   osm.on("tileerror",()=>{if(map.hasLayer(osm)&&note)note.textContent="Map tiles unavailable; use the drive list below.";});
   carto.addTo(map);
   L.control.layers({"CARTO streets":carto,"OpenStreetMap":osm,"NASA satellite":satellite},
-    {"Seasonal color wash":washes,"Scenic drives":pins},{collapsed:true}).addTo(map);
+    {"Seasonal color wash":washes,"Scenic drives":pins,"Viewing locations":spotsLayer},{collapsed:true}).addTo(map);
   if(switchButton)switchButton.addEventListener("click",()=>{
     choose(activeBase===osm?carto:osm);
   });
@@ -153,8 +178,56 @@ try{
     hit.on("popupclose",()=>{if(lastOpen===d.index)lastOpen=null;});
     rows.push({drive:d,pin,hit,washes:washLayers});
   });
+  (Array.isArray(data.spots)?data.spots:[]).forEach(place=>{
+    if(!Number.isFinite(place.lat)||!Number.isFinite(place.lon))return;
+    const coords=[place.lat,place.lon],s=stage();
+    bounds.push(coords);
+    // Deliberately smaller than the 9px scenic-drive corridor symbols;
+    // secondary locations receive no extra wash to avoid giant color blobs.
+    const pin=L.circleMarker(coords,{radius:6,weight:2,color:"#ffffff",fillColor:s.color,
+      fillOpacity:.90,interactive:false}).addTo(spotsLayer);
+    pin.getElement()?.setAttribute("data-regional-spot",String(place.index));
+    pin.getElement()?.setAttribute("data-stage",s.id);
+    const hit=L.circleMarker(coords,{radius:16,weight:0,opacity:0,
+      fillOpacity:0,interactive:true,bubblingMouseEvents:false}).addTo(spotsLayer);
+    const el=hit.getElement();
+    if(el){
+      el.setAttribute("data-regional-spot-hit",String(place.index));
+      el.setAttribute("tabindex","0");
+      el.setAttribute("role","button");
+      el.setAttribute("aria-label","View "+place.name+" on the foliage map");
+      el.addEventListener("keydown",e=>{
+        if(e.key==="Enter"||e.key===" "){e.preventDefault();hit.openPopup();}
+      });
+    }
+    hit.bindPopup(spotPopup(place),{maxWidth:285,minWidth:210,
+      autoPan:true,autoPanPadding:[18,18]});
+    hit.on("popupopen",()=>{lastOpenSpot=place.index;});
+    hit.on("popupclose",()=>{if(lastOpenSpot===place.index)lastOpenSpot=null;});
+    spotRows.push({place,pin,hit});
+  });
   if(!bounds.length)throw Error("No mapped drives");
-  map.fitBounds(bounds,{padding:[32,32],maxZoom:9,animate:false});
+  const fitLocations=coordinates=>{
+    if(coordinates.length)map.fitBounds(coordinates,{padding:[32,32],maxZoom:9,animate:false});
+  };
+  fitLocations(bounds);
+  if(areaPicker)areaPicker.addEventListener("change",()=>{
+    const code=areaPicker.value;
+    if(code==="all"){fitLocations(bounds);return;}
+    const areaSpots=spotRows.filter(row=>row.place.state===code).map(row=>[row.place.lat,row.place.lon]);
+    fitLocations(areaSpots);
+  });
+  document.querySelectorAll("[data-regional-spot-pick]").forEach(button=>{
+    button.addEventListener("click",()=>{
+      const index=Number(button.getAttribute("data-regional-spot-pick"));
+      const row=spotRows.find(item=>item.place.index===index);
+      if(!row)return;
+      // Location-list selection resolves ambiguity among nearby dots.
+      map.setView([row.place.lat,row.place.lon],Math.max(map.getZoom(),10),{animate:false});
+      row.hit.openPopup();
+      host.scrollIntoView({behavior:"smooth",block:"center"});
+    });
+  });
   render();
   requestAnimationFrame(()=>map.invalidateSize({animate:false}));
 }catch{
