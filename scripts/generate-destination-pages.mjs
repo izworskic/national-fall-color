@@ -79,18 +79,29 @@ const miles=(a,b)=>{
 const css="*{box-sizing:border-box}html{overflow-x:hidden}body{margin:0;background:#f7f2e8;color:#302820;font:16px/1.62 system-ui,-apple-system,Segoe UI,sans-serif;overflow-wrap:anywhere}a{color:#31533d;text-underline-offset:3px}.top{background:#fffaf1;border-bottom:1px solid #d9cdbb}.shell{max-width:890px;margin:0 auto;padding:20px}.top .shell{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}.top nav{display:flex;flex-wrap:wrap;gap:14px;font-size:13px}main.shell{padding-top:22px;padding-bottom:48px}.crumb{font-size:12px;color:#61564b}.kicker{font-size:11px;letter-spacing:.13em;font-weight:800;color:#87603a;text-transform:uppercase;margin-top:16px}h1,h2,h3{font-family:Georgia,serif;line-height:1.18}h1{font-size:clamp(30px,6vw,48px);margin:9px 0 14px}h2{font-size:25px;margin:28px 0 9px}h3{font-size:18px}.lead{font-size:18px;max-width:790px;color:#51483f}.card{padding:18px;background:#fffdfa;border:1px solid #d9cdbb;border-radius:14px;margin:16px 0}.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:15px}.label{display:block;font-size:11px;letter-spacing:.12em;font-weight:800;color:#786242;text-transform:uppercase}.stage{font:600 23px/1.25 Georgia,serif;color:#31533d;margin:8px 0}.muted{font-size:13px;color:#61564b}.answer{border-left:4px solid #31533d;padding-left:14px}.answer strong{font-size:18px}.controls{display:flex;align-items:center;flex-wrap:wrap;gap:9px}.controls input{font:inherit;max-width:100%;min-height:46px;border:1px solid #b6aa98;border-radius:8px;padding:9px}.controls label{font-weight:700;font-size:13px}.controls button,.links a{display:inline-block;min-height:44px;padding:11px 14px;border-radius:8px;border:1px solid #31533d;background:#31533d;color:white;text-decoration:none;font:700 13px system-ui,sans-serif;cursor:pointer}.controls button[hidden]{display:none}.links{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}.warning{border-left:3px solid #ac6739;background:#fcf3e6;padding:8px 15px}.network{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.network a{padding:14px;border:1px solid #d9cdbb;border-radius:10px;background:#fffdfa;text-decoration:none;font-weight:700;font-size:14px}.network small{display:block;color:#61564b;font-weight:400}footer{border-top:1px solid #d9cdbb;font-size:13px;color:#61564b}:focus-visible{outline:3px solid #9e613a;outline-offset:2px}@media(max-width:650px){.shell{padding-left:15px;padding-right:15px}.grid,.network{grid-template-columns:1fr}.card{padding:15px}h2{font-size:23px}}";
 function client(){
  "use strict";
- const el=document.getElementById("guide-timing"),input=document.getElementById("guide-date"),button=document.getElementById("preview-next"),title=document.getElementById("stage-verdict"),reason=document.getElementById("stage-reason");
+ const el=document.getElementById("guide-timing"),input=document.getElementById("guide-date"),button=document.getElementById("preview-next"),title=document.getElementById("stage-verdict"),reason=document.getElementById("stage-reason"),compare=document.getElementById("comparison-verdict");
  if(!el||!input||!title||!reason)return;
  const guide=JSON.parse(el.textContent),now=new Date(),year=now.getFullYear();
  const local=[year,String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
  const valid=x=>/^\d{4}-\d{2}-\d{2}$/.test(x)&&new Date(x+"T12:00:00Z").toISOString().slice(0,10)===x;
+ function describe(peak,doy){
+  const [start,end]=peak;
+  return doy<start-36?"Still green":doy<start-25?"Early change":doy<start-17?"Developing gold":doy<start-9?"Color developing":doy<start?"Approaching typical peak":doy<=end?"Within typical peak window":doy<=end+5?"Color fading":doy<=end+13?"Late russet color":doy<=end+24?"Mostly bare woodland":"Season complete";
+ }
  function render(){
   const date=input.value;if(!valid(date)){title.textContent="Choose a valid date";reason.textContent="Invalid calendar dates are not scored.";return;}
   const dt=new Date(date+"T12:00:00Z"),m=dt.getUTCMonth()+1;
-  if(m<9||m===12&&dt.getUTCDate()>8){title.textContent="Season complete";reason.textContent="Winter has no live leaf reading. Preview a future fall to see the typical seasonal scenario.";return;}
-  const doy=Math.floor((dt-Date.UTC(dt.getUTCFullYear(),0,1))/86400000)+1,[start,end]=guide.peak;
-  title.textContent=doy<start-36?"Still green":doy<start-25?"Early change":doy<start-17?"Developing gold":doy<start-9?"Color developing":doy<start?"Approaching typical peak":doy<=end?"Within typical peak window":doy<=end+5?"Color fading":doy<=end+13?"Late russet color":doy<=end+24?"Mostly bare woodland":"Season complete";
+  if(m<9||m===12&&dt.getUTCDate()>8){
+    title.textContent="Season complete";
+    reason.textContent="Winter has no live leaf reading. Preview a future fall to see the typical seasonal scenario.";
+    if(compare)compare.textContent="Season complete. No peak-color recommendation is given for this date.";
+    return;
+  }
+  const doy=Math.floor((dt-Date.UTC(dt.getUTCFullYear(),0,1))/86400000)+1;
+  const here=describe(guide.peak,doy),there=describe(guide.other.peak,doy);
+  title.textContent=here;
   reason.textContent="Geography-informed seasonal estimate for "+date+"; not a live canopy observation, confirmed road status or guarantee.";
+  if(compare)compare.textContent=guide.name+": "+here+". "+guide.other.name+": "+there+". These are separate historical location scenarios, not observed leaf colors or a drive-time comparison.";
  }
  const inFall=local.slice(5)>="09-01"&&local.slice(5)<="12-08";
  input.min=String(Math.max(2026,year-1))+"-09-01";input.max=String(year+1)+"-12-08";
@@ -115,6 +126,8 @@ function page(g){
  {"@type":"ListItem",position:4,name:g.name,item:canonical}]}
  ];
  const other=byRegion[g.region].filter(x=>x.slug!==g.slug);
+ if(other.length!==1)throw Error("Exactly one paired local destination required "+g.slug);
+ const otherWindow=human(state.isoFromDoy(2027,other[0].peak[0]))+"–"+human(state.isoFromDoy(2027,other[0].peak[1]));
  const neighbors=regions.filter(x=>x.id!==g.region).map(x=>({r:x,d:miles(x,r)}))
   .filter(x=>x.d<=250).sort((a,b)=>a.d-b.d).slice(0,2);
  const linked=other.map(x=>'<a href="'+url(x.region,x.slug)+'">'+esc(x.name)+'<small>'+esc(x.experience.split(".")[0])+'.</small></a>').join("")+
@@ -141,6 +154,10 @@ function page(g){
  '<aside class="card"><span class="label">Choose the trip, not just a date</span><h2 style="margin:8px 0">Can I go?</h2><p>A promising fall-color window does not establish road access, park admission, parking or trail safety. Verify official rules and check current weather.</p>'+
  '<div class="links"><a href="'+regionLink+'">Compare the region</a><a href="'+esc(g.access)+'" rel="noopener noreferrer">Verify access ↗</a></div>'+
  '<p class="muted">Map point is an approximate scenic corridor or viewing area, not a parking-lot coordinate or driving route.</p></aside></div>'+
+ '<section class="card" aria-labelledby="compare-title"><span class="label">One date, two different landscapes</span><h2 id="compare-title" style="margin:8px 0 4px">Also consider '+esc(displayNames[other[0].slug]||other[0].name)+'</h2>'+
+ '<p>Its modeled typical color window: '+esc(otherWindow)+'. Compare both locations on the date selected above—different areas do not all peak together.</p>'+
+ '<p id="comparison-verdict" class="muted" aria-live="polite">Comparing the two typical timing profiles…</p>'+
+ '<p><a href="'+url(other[0].region,other[0].slug)+'">Explore the '+esc(displayNames[other[0].slug]||other[0].name)+' fall-color guide →</a></p></section>'+
  ''+
  '<h2>How to plan the visit</h2><p>'+esc(g.plan)+'</p>'+
  '<h2>Road, park and safety checks</h2><div class="warning"><p>'+esc(g.caution)+'</p></div>'+
@@ -154,7 +171,7 @@ function page(g){
  '<p class="muted">Source links are provided for independent verification. The modeled season is not presented as an individual sensor or observed leaf percentage.</p></section>'+
  '<section><h2>Explore the local fall-color network</h2><div class="network">'+linked+'</div></section>'+ 
  (gatewayForGuide[g.slug]||[]).map(key=>'<p class="muted"><a href="/national-tools/fall-color/'+key+'/">Also compare the city forecast for '+esc(cityNetwork[key].name)+'</a>. This is a regional context forecast, not a point observation at '+esc(publicName)+'.</p>').join("")+
- '<script type="application/json" id="guide-timing">'+json({peak:g.peak,name:g.name})+'</script></main>'+
+ '<script type="application/json" id="guide-timing">'+json({peak:g.peak,name:publicName,other:{name:displayNames[other[0].slug]||other[0].name,peak:other[0].peak}})+'</script></main>'+
  '<footer><div class="shell">Researched field guide by <a href="/chris-izworski/">Chris Izworski</a>. <a href="/fall-color/">Michigan’s separate live foliage engine</a> is unchanged.</div></footer>'+
  '<script>('+client.toString()+')();</script></body></html>';
  return html;
@@ -163,6 +180,30 @@ for(const g of all){
  const dest=path.join(root,"public/fall-color",g.region,g.slug,"index.html");
  fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest,page(g));
 }
+// Bridge the eight existing, functioning city-intent pages into the region and
+// named-destination hierarchy. These links are direct HTML, not JS navigation.
+// No new URLs, duplicate pages, redirects or Michigan engine edits.
+for(const [slug,city] of Object.entries(cityNetwork)){
+ const filename=path.join(root,"public/national-tools/fall-color",slug,"index.html");
+ if(!fs.existsSync(filename))throw Error("City page missing "+slug);
+ let html=fs.readFileSync(filename,"utf8");
+ const region=regionById[city.region],places=byRegion[city.region];
+ if(!region||places?.length!==2)throw Error("Unmapped city network "+slug);
+ const cards=places.map(g=>'<a href="'+url(g.region,g.slug)+'" style="display:block;border:1px solid #d8ceb9;border-radius:10px;padding:11px 13px;text-decoration:none;background:#fffefb">'+
+   '<strong>'+esc(displayNames[g.slug]||g.name)+' fall color</strong><span style="display:block;font-size:12px;margin-top:4px">'+esc(g.plan.split(". ")[0])+'.</span></a>').join("");
+ const section='<section class="section" data-fall-city-network="'+esc(slug)+'"><div class="wrap">'+
+  '<div style="background:#f8f3e8;border:1px solid #d8ceb9;border-radius:12px;padding:16px">'+
+  '<div class="eyebrow">Plan a real fall-color outing</div><h2>Places to see fall color from '+esc(city.name)+'</h2>'+
+  '<p>'+esc(city.context)+'</p>'+
+  '<p><a href="'+regionUrl(region.id)+'">Compare the '+esc(region.name)+' map and date planner</a></p>'+
+  '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:10px">'+cards+'</div>'+
+  '</div></div></section>';
+ const match=html.match(/<section class="section seo-location-context"[\s\S]*?<\/section>/);
+ if(!match||html.includes('data-fall-city-network'))throw Error("City insertion anchor ambiguous "+slug);
+ html=html.replace(match[0],match[0]+section);
+ fs.writeFileSync(filename,html);
+}
+
 for(const r of regions){
  const filename=path.join(root,"public/fall-color",r.id,"index.html");
  let html=fs.readFileSync(filename,"utf8");
