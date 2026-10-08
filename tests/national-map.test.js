@@ -55,6 +55,13 @@ test("all 7 Michigan palette colors preserved; low-opacity 3-ring wash",()=>{
   assert.match(ui,/ringRadii=\[112000,67000,32000\]/);
   assert.match(ui,/radius:18/);
   assert.match(ui,/L\.control\.layers/);
+  assert.match(ui,/rastertiles\/voyager\//);
+  assert.match(ui,/\?key=/,"CARTO raster tiles require a browser-side basemap key");
+  assert.match(ui,/cb1_2y8f_1_1ee5e3a872c91d0ebf5d7b88/,"Use exactly the existing Michigan browser key");
+  assert.match(ui,/tile\.openstreetmap\.org/,"Independent backup provider");
+  assert.match(ui,/cartoErrors>=3/,"Fails over when CARTO tiles error");
+  assert.match(ui,/CARTO tiles did not load/,"Fails over on stalled tile requests");
+
   assert.doesNotMatch(ui,/mapbox|access_token|pk\./i);
 });
 test("today or forthcoming season date slider spans western aspens and late Texas",()=>{
@@ -75,6 +82,9 @@ test("page has fallback directory, slider, popups, on-demand weather and analyti
   assert.match(hub,/<link rel="canonical" href="https:\/\/chrisizworski.com\/fall-color\/national\/">/);
   for(const id of ["national-date-slider","national-reset-date","national-selected-date","national-map-fallback","national-map-status","national-map-regions"])assert.ok(hub.includes('id="'+id+'"'));
   assert.ok(hub.includes("map-state.js")&&hub.includes("map-ui.js"));
+  assert.ok(hub.includes('id="national-switch-basemap"'));
+  assert.ok(hub.includes('id="national-basemap-status"'));
+
   assert.ok(fs.existsSync(statePath));
   assert.ok(fs.existsSync("public/national-tools/fall-color/national-map/map-ui.js"));
   assert.ok(fs.existsSync("public/national-tools/fall-color/national-map/leaflet/leaflet.js"));
