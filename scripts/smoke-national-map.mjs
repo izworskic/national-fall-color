@@ -232,6 +232,28 @@ try{
     assert.ok(fullWidth[0]<=fullWidth[1]+1,slug+" planner mobile width "+fullWidth.join("/"));
     await page.close();
   }
+  // Destination detail field guides: both sites in every region, on a real
+  // 390px phone browser. Check date-stage changes, canonical, and overflow.
+  {
+    const {guides}=createRequire(import.meta.url)("../lib/national-destination-guides.js");
+    const detail=await context.newPage();
+    for(const guide of guides){
+      const p="/fall-color/"+guide.region+"/"+guide.slug+"/";
+      const response=await detail.goto(base+p,{waitUntil:"domcontentloaded"});
+      assert.equal(response.status(),200,guide.slug+" resolved page");
+      assert.equal(await detail.locator("h1").count(),1,guide.slug+" one H1");
+      assert.equal(await detail.locator("#guide-date").count(),1,guide.slug+" day decision");
+      assert.equal(await detail.locator('link[rel="canonical"]').getAttribute("href"),
+        "https://chrisizworski.com"+p,guide.slug+" canonical");
+      await detail.locator("#guide-date").fill("2026-10-06");
+      assert.ok((await detail.locator("#stage-verdict").innerText()).length>4,guide.slug+" stage is rendered");
+      await detail.locator("#guide-date").fill("2027-01-12");
+      assert.match(await detail.locator("#stage-verdict").innerText(),/Season complete/i,guide.slug+" no invented winter color");
+      const width=await detail.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
+      assert.ok(width[0]<=width[1]+1,guide.slug+" no horizontal overflow "+width.join("/"));
+    }
+    await detail.close();
+  }
   await context.close();
   // Winter calendar must never silently turn national or local dots green.
   const winter=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true});
@@ -259,7 +281,7 @@ try{
   const winterWidths=await review.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
   assert.ok(winterWidths[0]<=winterWidths[1]+1,"winter controls have no horizontal overflow");
   await winter.close();
-  console.log("NATIONAL_MAP_BROWSER_PASS 390px; independent-site-stages=PASS; NE-north-coast-gradient=PASS; regional-maps=15; corridors=49; viewing-locations=53; new-england-spots=16; state-zoom=PASS; spot-popup=PASS; keyed-CARTO-tiles=PASS; switches=PASS; tiles-offline=PASS; no-JS=PASS; winter-gray=PASS; next-fall-preview=PASS; day-decision-regions=15; map-handoff=PASS; overflow=0");
+  console.log("NATIONAL_MAP_BROWSER_PASS 390px; independent-site-stages=PASS; NE-north-coast-gradient=PASS; regional-maps=15; corridors=49; viewing-locations=53; new-england-spots=16; state-zoom=PASS; spot-popup=PASS; keyed-CARTO-tiles=PASS; switches=PASS; tiles-offline=PASS; no-JS=PASS; winter-gray=PASS; next-fall-preview=PASS; day-decision-regions=15; destination-guides=30; map-handoff=PASS; overflow=0");
 }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));
