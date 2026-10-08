@@ -99,4 +99,12 @@ const hub=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name
 const hp=path.join(root,"public/fall-color/national/index.html");fs.mkdirSync(path.dirname(hp),{recursive:true});fs.writeFileSync(hp,hub);
 const urls=["national",...regions.map(r=>r.id)];
 fs.writeFileSync(path.join(root,"public/fall-color/national-sitemap.xml"),`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(s=>`  <url><loc>${url(s)}</loc><lastmod>2026-10-08</lastmod></url>`).join("\n")}\n</urlset>\n`);
+const locatorPath=path.join(root,"public/national-tools/fall-color/index.html");
+let locator=fs.readFileSync(locatorPath,"utf8");
+if(!locator.includes('data-2027-national-regions')){
+ if(!locator.includes("</main>"))throw new Error("National fall-color locator has no main element");
+ const section='<section data-2027-national-regions class="section"><div class="wrap"><h2>2027 fall-color regional guides</h2><p>For a driving weekend, compare the 15 U.S. regions and their scenic corridors before choosing a city. These regional pages include NWS weather and available ground reports.</p><p><a href="/fall-color/national/">Browse all 15 national fall-color guides</a> · <a href="/fall-color/new-england/">New England</a> · <a href="/fall-color/great-smoky-mountains/">Great Smoky Mountains</a> · <a href="/fall-color/colorado-aspens/">Colorado aspens</a></p></div></section>';
+ locator=locator.replace("</main>",section+"</main>");
+ fs.writeFileSync(locatorPath,locator);
+}
 console.log("National foliage pages: "+regions.length+" regions + hub + sitemap");
