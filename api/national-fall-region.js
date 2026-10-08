@@ -9,7 +9,7 @@ function partsInZone(now,tz) {
   const v=Object.fromEntries(new Intl.DateTimeFormat("en-US",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit",weekday:"short"}).formatToParts(now).map(x=>[x.type,x.value]));
   return {year:+v.year,month:+v.month,day:+v.day,date:`${v.year}-${v.month}-${v.day}`};
 }
-function dayOfYear(y,m,d) {return Math.floor((Date.UTC(y,m-1,d)-Date.UTC(y,0,0))/86400000)+1;}
+function dayOfYear(y,m,d) {return Math.floor((Date.UTC(y,m-1,d)-Date.UTC(y,0,1))/86400000)+1;}
 function dateFromDoy(y,d) {return new Date(Date.UTC(y,0,d)).toISOString().slice(0,10);}
 function saturday(tz,now) {
   // Find the next Saturday in the region's own civil calendar.
