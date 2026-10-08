@@ -47,7 +47,8 @@ test("chronological stage curve varies Sept-Nov and separates before from after"
   }
 });
 test("Michigan palette retained with progressive autumn fade and subdued winter",()=>{
-  assert.deepEqual(M.stages.slice(0,6).map(s=>s.color),["#4A6633","#5A6B3A","#8E6410","#9E5F13","#9C4E27","#8E301C"]);\n  assert.deepEqual(M.stages.slice(6).map(s=>s.id),["fading","past","bare","offseason"]);
+  assert.deepEqual(M.stages.slice(0,6).map(s=>s.color),["#4A6633","#5A6B3A","#8E6410","#9E5F13","#9C4E27","#8E301C"]);
+  assert.deepEqual(M.stages.slice(6).map(s=>s.id),["fading","past","bare","offseason"]);
   assert.ok(M.washAlpha("peak")<=.20);
   assert.ok(M.washAlpha("past")<M.washAlpha("peak"));
   const ui=fs.readFileSync(uiPath,"utf8");
