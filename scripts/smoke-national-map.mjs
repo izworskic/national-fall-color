@@ -57,11 +57,15 @@ try{
     status:document.getElementById("regional-map-status")?.textContent,
     hasLeaflet:typeof window.L,
     hasModel:typeof window.NationalFallMapState,
+    pinCount:document.querySelectorAll("[data-regional-drive]").length,
+    pinOuter:document.querySelector('[data-regional-drive="1"]')?.outerHTML?.slice(0,350),
+    pinRect:(()=>{const p=document.querySelector('[data-regional-drive="1"]');if(!p)return null;const r=p.getBoundingClientRect();return {width:r.width,height:r.height,x:r.x,y:r.y};})(),
+    mapRect:(()=>{const p=document.getElementById("regional-map");const r=p.getBoundingClientRect();return {width:r.width,height:r.height,x:r.x,y:r.y};})(),
     mapHTML:document.getElementById("regional-map")?.innerHTML?.slice(0,230),
     mapScripts:[...document.scripts].filter(s=>s.src.includes("map")).map(s=>s.src)
   }));
   console.log("REGIONAL_MAP_DIAG",JSON.stringify({regionalDiagnose,regionalErrors}));
-  await liveMap.waitForSelector('[data-regional-drive="1"]',{timeout:5000});
+  await liveMap.waitForSelector('[data-regional-drive="1"]',{state:"attached",timeout:5000});
   assert.equal(await liveMap.locator("[data-regional-drive]").count(),4);
   await liveMap.waitForSelector('img.leaflet-tile-loaded[src*="basemaps.cartocdn.com"]',{timeout:18000});
   assert.ok(tileResponses.slice(priorTileResponses).some(t=>t.status===200&&t.type.includes("image/")&&t.url.includes("?key=cb1_")),
