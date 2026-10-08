@@ -72,7 +72,9 @@ test("today or forthcoming season date slider spans western aspens and late Texa
   assert.equal(dates.length,99);
   assert.equal(M.initialDate(new Date(2026,9,8,10),dates),"2026-10-08");
   assert.equal(M.initialDate(new Date(2026,5,1,10),dates),"2026-09-01");
-  assert.equal(M.seasonYear(new Date(2026,11,20,12)),2026);\n  assert.equal(M.seasonYear(new Date(2027,0,10,12)),2026);\n  assert.equal(M.seasonYear(new Date(2027,8,10,12)),2027);
+  assert.equal(M.seasonYear(new Date(2026,11,20,12)),2026);
+  assert.equal(M.seasonYear(new Date(2027,0,10,12)),2026);
+  assert.equal(M.seasonYear(new Date(2027,8,10,12)),2027);
   assert.equal(M.initialDate(new Date(2026,11,20,12),M.seasonDates(2027)),"2027-09-01");
   assert.equal(M.doyFromIso("2028-03-01"),61);
   assert.throws(()=>M.doyFromIso("2026-09-31"));
