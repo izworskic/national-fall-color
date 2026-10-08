@@ -247,12 +247,31 @@ try{
         "https://chrisizworski.com"+p,guide.slug+" canonical");
       await detail.locator("#guide-date").fill("2026-10-06");
       assert.ok((await detail.locator("#stage-verdict").innerText()).length>4,guide.slug+" stage is rendered");
+      const compared=await detail.locator("#comparison-verdict").innerText();
+      assert.ok(compared.includes("separate historical location scenarios"),guide.slug+" real paired date comparison");
       await detail.locator("#guide-date").fill("2027-01-12");
       assert.match(await detail.locator("#stage-verdict").innerText(),/Season complete/i,guide.slug+" no invented winter color");
       const width=await detail.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
       assert.ok(width[0]<=width[1]+1,guide.slug+" no horizontal overflow "+width.join("/"));
     }
     await detail.close();
+    // Existing eight city-entry points must connect to their real destination
+    // guides without replacing the existing live national-forecast preset.
+    for(const [city,region] of [
+      ["stowe-vt","new-england"],["north-conway-nh","new-england"],
+      ["bar-harbor-me","new-england"],["asheville-nc","great-smoky-mountains"],
+      ["gatlinburg-tn","great-smoky-mountains"],["lake-placid-ny","adirondacks"],
+      ["breckenridge-co","colorado-aspens"],["shenandoah-va","shenandoah"]
+    ]){
+      const page=await context.newPage();
+      const response=await page.goto(base+"/national-tools/fall-color/"+city+"/",{waitUntil:"domcontentloaded"});
+      assert.equal(response.status(),200,city+" old local forecast still live");
+      assert.equal(await page.locator('[data-fall-city-network="'+city+'"]').count(),1,city+" connects into cluster");
+      assert.equal(await page.locator('[data-fall-city-network="'+city+'"] a[href*="/fall-color/'+region+'/"]').count(),3,city+" parent and two place links");
+      const dims=await page.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
+      assert.ok(dims[0]<=dims[1]+1,city+" local forecast no phone overflow");
+      await page.close();
+    }
   }
   await context.close();
   // Winter calendar must never silently turn national or local dots green.
@@ -281,7 +300,7 @@ try{
   const winterWidths=await review.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
   assert.ok(winterWidths[0]<=winterWidths[1]+1,"winter controls have no horizontal overflow");
   await winter.close();
-  console.log("NATIONAL_MAP_BROWSER_PASS 390px; independent-site-stages=PASS; NE-north-coast-gradient=PASS; regional-maps=15; corridors=49; viewing-locations=53; new-england-spots=16; state-zoom=PASS; spot-popup=PASS; keyed-CARTO-tiles=PASS; switches=PASS; tiles-offline=PASS; no-JS=PASS; winter-gray=PASS; next-fall-preview=PASS; day-decision-regions=15; destination-guides=30; map-handoff=PASS; overflow=0");
+  console.log("NATIONAL_MAP_BROWSER_PASS 390px; independent-site-stages=PASS; NE-north-coast-gradient=PASS; regional-maps=15; corridors=49; viewing-locations=53; new-england-spots=16; state-zoom=PASS; spot-popup=PASS; keyed-CARTO-tiles=PASS; switches=PASS; tiles-offline=PASS; no-JS=PASS; winter-gray=PASS; next-fall-preview=PASS; day-decision-regions=15; destination-guides=30; city-gateways=8; comparison=PASS; map-handoff=PASS; overflow=0");
 }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));

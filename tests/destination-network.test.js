@@ -41,12 +41,17 @@ test("30 canonical destination pages publish real place identity, map timing, of
   const escapeText=x=>String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   assert.ok(h.includes(escapeText(g.experience))&&h.includes(escapeText(g.plan))&&h.includes(escapeText(g.caution)),g.slug+" genuinely place-specific visitor content");
   assert.ok(h.includes('id="guide-timing"')&&h.includes('id="guide-date"')&&h.includes('id="stage-verdict"'),g.slug+" working date controls");
+  assert.ok(h.includes('id="comparison-verdict"')&&h.includes('aria-labelledby="compare-title"'),g.slug+" nearby comparison is visible");
+  assert.equal(h.split(escapeText(g.experience)).length-1,1,g.slug+" opening copy not repeated as boilerplate");
   assert.ok(h.includes('application/ld+json'),g.slug+" schema");
   const schema=JSON.parse(h.split('<script type="application/ld+json">')[1].split("</script>")[0]);
   const graph=schema["@graph"];assert.equal(graph.find(x=>x["@type"]==="WebPage").url,canonical);
   assert.equal(graph.find(x=>x["@type"]==="Place").name,g.name);
   assert.equal(graph.find(x=>x["@type"]==="BreadcrumbList").itemListElement.length,4);
-  assert.equal(JSON.parse(h.split('<script type="application/json" id="guide-timing">')[1].split("</script>")[0]).peak.length,2);
+  const timing=JSON.parse(h.split('<script type="application/json" id="guide-timing">')[1].split("</script>")[0]);
+  assert.equal(timing.peak.length,2);
+  assert.equal(timing.other.peak.length,2,g.slug+" pair independent model data");
+  assert.equal(timing.other.name,({"maroon-bells-aspen-color":"Maroon Bells / Maroon Creek","lost-maples":"Lost Maples State Natural Area","acadia-park-loop-road":"Acadia National Park Loop Road","cades-cove":"Cades Cove","peninsula-state-park":"Peninsula State Park","skyline-drive-central":"Skyline Drive Central District"}[other.slug]||other.name),g.slug+" real comparison name");
   const script=h.match(/<script>\((function client\(\)[\s\S]*?)\)\(\);<\/script>/)?.[1];
   assert.ok(script,g.slug+" date engine");
   assert.doesNotThrow(()=>new vm.Script("("+script+")();"),g.slug+" JS syntax");
@@ -70,6 +75,29 @@ test("all 15 regions and the U.S. hub form a crawlable two-level topical network
  const sitemap=fs.readFileSync(path.join(root,"destinations-sitemap.xml"),"utf8");
  assert.equal((sitemap.match(/<loc>/g)||[]).length,30);
  for(const g of guides)assert.ok(sitemap.includes("<loc>"+href(g)+"</loc>"));
+});
+test("all eight existing city forecast pages link to region and two named destinations without replacing the preset engine",()=>{
+ const cityRegions={
+ "stowe-vt":"new-england","north-conway-nh":"new-england","bar-harbor-me":"new-england",
+ "asheville-nc":"great-smoky-mountains","gatlinburg-tn":"great-smoky-mountains",
+ "lake-placid-ny":"adirondacks","breckenridge-co":"colorado-aspens","shenandoah-va":"shenandoah"
+ };
+ for(const [slug,region] of Object.entries(cityRegions)){
+  const html=fs.readFileSync(path.join(root,"..","national-tools","fall-color",slug,"index.html"),"utf8");
+  assert.ok(html.includes('data-fall-city-network="'+slug+'"'),slug+" city has visible named-experience choices");
+  assert.ok(html.includes('data-location-preset'),slug+" existing functioning preset kept");
+  assert.ok(html.includes('data-seo-location="'+slug+'"'),slug+" city identity retained");
+  assert.ok(html.includes('href="https://chrisizworski.com/fall-color/'+region+'/"'),slug+" regional planner");
+  for(const g of guides.filter(x=>x.region===region))assert.ok(html.includes(href(g)),slug+" to "+g.slug);
+ }
+ const generator=fs.readFileSync(path.join(root,"..","..","scripts","generate-destination-pages.mjs"),"utf8");
+ assert.match(generator,/x\.d<=250/,"never label geographically unrelated regions nearby");
+});
+test("destination planner cards expose only first-party named field guides with real map data",()=>{
+ const planner=fs.readFileSync(path.join(root,"national","day-planner-ui.js"),"utf8");
+ assert.ok(planner.includes("day-field-guide"));
+ assert.ok(planner.includes("namedGuide+link+forecast+access"));
+ assert.ok(planner.includes("https:\\/\\/chrisizworski"));
 });
 test("Michigan paths and existing location pages are not generated or replaced",()=>{
  assert.ok(!guides.some(x=>x.region==="michigan"));
