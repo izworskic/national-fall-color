@@ -105,7 +105,7 @@ test("regional map keeps the tested Michigan colors and an evidence-safe seasona
   assert.match(ui,/spotPopup/);
   assert.match(ui,/Viewing locations/);
   assert.match(ui,/areaPicker\.addEventListener\("change"/);
-  assert.match(ui,/All dots use the same regional timing model/);
+  assert.match(ui,/Dots differ by landscape, not by live site observations/);
 
   assert.match(ui,/regional-date-slider/);
   assert.doesNotMatch(ui,/mapbox|access_token|pk\./i);
