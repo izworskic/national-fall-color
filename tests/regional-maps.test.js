@@ -3,6 +3,7 @@ const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const {regions}=require("../lib/national-region-catalog");
 const {corridorAnchors}=require("../lib/national-regional-map-places");
+const {viewingSpots}=require("../lib/national-regional-viewing-spots");
 const M=require("../lib/national-map-state");
 
 test("every regional page has an individual map with the exact existing drives",()=>{
@@ -52,6 +53,36 @@ test("every regional page has an individual map with the exact existing drives",
     assert.ok(html.includes('rel="canonical"'));
   }
   assert.equal(total,49,"all 49 canonical scenic drives mapped");
+  const expectedRegions=Object.keys(viewingSpots).sort();
+  assert.deepEqual(expectedRegions,Array.from(ids).sort(),"all region decisions have researched localities");
+  let added=0;
+  for(const region of regions){
+    const p="public/fall-color/"+region.id+"/index.html";
+    const html=fs.readFileSync(p,"utf8");
+    const encoded=html.split('<script type="application/json" id="regional-map-data">')[1]?.split("</script>")[0];
+    assert.ok(encoded,"embedded map JSON "+region.id);
+    const embedded=JSON.parse(encoded);
+    const spots=embedded.spots;
+    assert.equal(spots.length,viewingSpots[region.id].length);
+    assert.ok(html.includes('class="regional-spot-directory"'),"static locality directory "+region.id);
+    assert.ok(html.includes('Viewing area'),"spot legend "+region.id);
+    assert.ok(html.includes("regional-spot-pick"),"map-to-place chooser "+region.id);
+    const names=new Set();
+    spots.forEach((spot,i)=>{
+      assert.equal(spot.index,i+1);
+      assert.ok(!names.has(spot.name.toLowerCase()),"duplicate name "+region.id);
+      names.add(spot.name.toLowerCase());
+      assert.ok(region.states.includes(spot.state),"outside catalog states "+region.id);
+      assert.ok(Number.isFinite(spot.lat)&&Number.isFinite(spot.lon),"finite coordinates "+region.id);
+      assert.ok(Math.abs(spot.lat-region.lat)<4.5&&Math.abs(spot.lon-region.lon)<5,"coordinate outside region "+spot.name);
+      assert.ok(spot.sourceUrl.startsWith("https://"),"source link "+spot.name);
+      assert.ok(spot.reason&&spot.reason.length>15,"decision-relevant context "+spot.name);
+    });
+    added+=spots.length;
+  }
+  assert.equal(viewingSpots["new-england"].length,16);
+  assert.equal(added,53,"source-reviewed 53 locality anchors across 15 regions");
+
 });
 test("regional map keeps the tested Michigan colors and an evidence-safe seasonal basis",()=>{
   assert.equal(M.stages.length,7);
@@ -70,6 +101,12 @@ test("regional map keeps the tested Michigan colors and an evidence-safe seasona
   assert.match(ui,/tile\.openstreetmap\.org/);
   assert.match(ui,/CARTO did not load/);
   assert.match(ui,/popupopen/);
+  assert.match(ui,/data-regional-spot/);
+  assert.match(ui,/spotPopup/);
+  assert.match(ui,/Viewing locations/);
+  assert.match(ui,/areaPicker\.addEventListener\("change"/);
+  assert.match(ui,/All dots use the same regional timing model/);
+
   assert.match(ui,/regional-date-slider/);
   assert.doesNotMatch(ui,/mapbox|access_token|pk\./i);
   for(const r of regions){
