@@ -60,4 +60,7 @@ test("generator produces canonical indexable distinct pages and sitemap",()=>{
  }
  const sitemap=fs.readFileSync("public/fall-color/national-sitemap.xml","utf8");
  assert.equal((sitemap.match(/<url><loc>/g)||[]).length,16);
+ const existingLocator=fs.readFileSync("public/national-tools/fall-color/index.html","utf8");
+ assert.ok(existingLocator.includes("data-2027-national-regions"));
+ assert.ok(existingLocator.includes("/fall-color/national/"));
 });
