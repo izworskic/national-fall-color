@@ -26,7 +26,7 @@ await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
 const address=server.address(),base="http://127.0.0.1:"+address.port;
 let browser;
 try{
-  browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
+  browser=await chromium.launch({headless:true,channel:process.env.CI?"chrome":undefined,args:["--no-sandbox"]});
   // Do not accept "markers rendered" as proof that the actual street map works.
   // Exercise CARTO with real network tiles and assert the Michigan key is sent.
   const online=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,hasTouch:true,isMobile:true});
