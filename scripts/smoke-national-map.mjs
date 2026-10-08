@@ -204,7 +204,33 @@ try{
   assert.equal(regionPins,49,"49 drive markers mapped across all 15 regions");
   assert.equal(viewingPins,53,"53 additional research-backed points mapped");
   await context.close();
-  console.log("NATIONAL_MAP_BROWSER_PASS 390px; independent-site-stages=PASS; NE-north-coast-gradient=PASS; regional-maps=15; corridors=49; viewing-locations=53; new-england-spots=16; state-zoom=PASS; spot-popup=PASS; keyed-CARTO-tiles=PASS; switches=PASS; tiles-offline=PASS; no-JS=PASS; overflow=0");
+  // Winter calendar must never silently turn national or local dots green.
+  const winter=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true});
+  await winter.route(/basemaps\\.cartocdn\\.com|tile\\.openstreetmap\\.org|gibs\\.earthdata\\.nasa\\.gov/,route=>route.abort());
+  const review=await winter.newPage();
+  await review.clock.install({time:new Date("2027-01-10T10:00:00-05:00")});
+  await review.goto(base+"/fall-color/national/",{waitUntil:"domcontentloaded"});
+  await review.waitForSelector('[data-region-marker]',{timeout:12000});
+  assert.match(await review.locator("#national-map-status").innerText(),/season complete/i);
+  assert.equal(await review.locator('[data-region-marker][data-stage="offseason"]').count(),15,"15 off-season national markers");
+  await review.locator("#national-preview-next").click();
+  assert.match(await review.locator("#national-selected-date").innerText(),/Sep.*2027/i);
+  assert.equal(await review.locator('[data-region-marker][data-stage="offseason"]').count(),0,"explicit preview restores fall season model");
+  await review.locator("#national-reset-date").click();
+  assert.equal(await review.locator('[data-region-marker][data-stage="offseason"]').count(),15,"season status resets all national markers to winter");
+  await review.goto(base+"/fall-color/new-england/",{waitUntil:"domcontentloaded"});
+  await review.waitForSelector('[data-regional-spot="1"]',{timeout:12000});
+  assert.equal(await review.locator('[data-regional-spot][data-stage="offseason"]').count(),16);
+  assert.equal(await review.locator('[data-regional-drive][data-stage="offseason"]').count(),4);
+  assert.match(await review.locator("#regional-map-status").innerText(),/season complete/i);
+  await review.locator("#regional-preview-next").click();
+  assert.equal(await review.locator('[data-regional-spot][data-stage="offseason"]').count(),0);
+  await review.locator("#regional-reset-date").click();
+  assert.equal(await review.locator('[data-regional-spot][data-stage="offseason"]').count(),16);
+  const winterWidths=await review.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
+  assert.ok(winterWidths[0]<=winterWidths[1]+1,"winter controls have no horizontal overflow");
+  await winter.close();
+  console.log("NATIONAL_MAP_BROWSER_PASS 390px; independent-site-stages=PASS; NE-north-coast-gradient=PASS; regional-maps=15; corridors=49; viewing-locations=53; new-england-spots=16; state-zoom=PASS; spot-popup=PASS; keyed-CARTO-tiles=PASS; switches=PASS; tiles-offline=PASS; no-JS=PASS; winter-gray=PASS; next-fall-preview=PASS; overflow=0");
 }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));
