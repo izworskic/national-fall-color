@@ -60,7 +60,7 @@ test("all 7 Michigan palette colors preserved; low-opacity 3-ring wash",()=>{
   assert.match(ui,/cb1_2y8f_1_1ee5e3a872c91d0ebf5d7b88/,"Use exactly the existing Michigan browser key");
   assert.match(ui,/tile\.openstreetmap\.org/,"Independent backup provider");
   assert.match(ui,/cartoErrors>=3/,"Fails over when CARTO tiles error");
-  assert.match(ui,/CARTO tiles did not load/,"Fails over on stalled tile requests");
+  assert.match(ui,/CARTO street tiles did not load/,"Fails over on stalled tile requests");
 
   assert.doesNotMatch(ui,/mapbox|access_token|pk\./i);
 });
