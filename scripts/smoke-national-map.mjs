@@ -203,35 +203,34 @@ try{
   }
   assert.equal(regionPins,49,"49 drive markers mapped across all 15 regions");
   assert.equal(viewingPins,53,"53 additional research-backed points mapped");
-  // Full phone-size planner acceptance: real selected date, region-specific
-  // candidate list, optional town origin, style switch and map popup handoff.
-  for(const [slug,date] of [
-    ["new-england","2026-10-18"],["great-smoky-mountains","2026-10-20"],["colorado-aspens","2026-09-24"]
-  ]){
+  // Acceptance-gate each regional decision journey on a 390px phone,
+  // using the local regional season rather than assuming Texas peaks in October.
+  for(const region of regions){
+    const slug=region.id;
+    const midpoint=Math.round((region.peak[0]+region.peak[1])/2);
+    const date=new Date(Date.UTC(2026,0,midpoint)).toISOString().slice(0,10);
     const page=await context.newPage();
     await page.goto(base+"/fall-color/"+slug+"/",{waitUntil:"domcontentloaded"});
-    await page.waitForSelector("#fall-day-results .day-result",{timeout:12000});
-    assert.ok((await page.locator("#fall-day-results .day-result").count())>=1,slug+" planner first paint");
-    assert.equal(await page.locator("#fall-day-date").inputValue(),"2026-10-08",slug+" current date");
+    await page.waitForSelector("#fall-day-form",{timeout:12000});
+    assert.ok((await page.locator("#fall-day-start option").count())>=5,slug+" starting town choices");
+    assert.equal(await page.locator("#fall-day-date").inputValue(),"2026-10-08",slug+" initial selected date");
     await page.locator("#fall-day-date").fill(date);
     await page.locator("#fall-day-style").selectOption("photo");
     await page.locator("#fall-day-start").selectOption("0");
     await page.locator("#fall-day-length").selectOption("day");
     await page.locator("#fall-day-submit").click();
-    assert.ok((await page.locator("#fall-day-results .day-result").count())>=1,slug+" matched result");
-    assert.ok((await page.locator("#fall-day-caption").innerText()).includes("typical timing estimates"),slug+" modeled disclosure");
-    assert.ok((await page.locator("#regional-selected-date").innerText()).includes(date.slice(0,4)),slug+" map date sync");
+    await page.waitForSelector("#fall-day-results .day-result",{timeout:8000});
+    assert.ok((await page.locator("#fall-day-results .day-result").count())<=3,slug+" top-three");
+    assert.ok((await page.locator("#fall-day-caption").innerText()).includes("typical timing estimates"),slug+" estimated-not-live disclosure");
+    assert.ok((await page.locator("#regional-selected-date").innerText()).includes("2026"),slug+" map date sync");
     await page.locator("#fall-day-results [data-day-focus-kind]").first().click();
     await page.locator(".regional-map-popup").waitFor({timeout:8000});
+    await page.locator("#fall-day-style").selectOption("relaxed");
+    await page.locator("#fall-day-start").selectOption("");
+    assert.ok((await page.locator("#fall-day-results .day-result").count())>=1,slug+" easygoing visitor path");
     const fullWidth=await page.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
     assert.ok(fullWidth[0]<=fullWidth[1]+1,slug+" planner mobile width "+fullWidth.join("/"));
     await page.close();
-  }
-  {
-    const nonPilot=await context.newPage();
-    await nonPilot.goto(base+"/fall-color/adirondacks/",{waitUntil:"domcontentloaded"});
-    assert.equal(await nonPilot.locator("#fall-day-form").count(),0,"other 12 pages retain original UI");
-    await nonPilot.close();
   }
   await context.close();
   // Winter calendar must never silently turn national or local dots green.
@@ -260,7 +259,7 @@ try{
   const winterWidths=await review.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
   assert.ok(winterWidths[0]<=winterWidths[1]+1,"winter controls have no horizontal overflow");
   await winter.close();
-  console.log("NATIONAL_MAP_BROWSER_PASS 390px; independent-site-stages=PASS; NE-north-coast-gradient=PASS; regional-maps=15; corridors=49; viewing-locations=53; new-england-spots=16; state-zoom=PASS; spot-popup=PASS; keyed-CARTO-tiles=PASS; switches=PASS; tiles-offline=PASS; no-JS=PASS; winter-gray=PASS; next-fall-preview=PASS; day-decision-pilots=3; map-handoff=PASS; overflow=0");
+  console.log("NATIONAL_MAP_BROWSER_PASS 390px; independent-site-stages=PASS; NE-north-coast-gradient=PASS; regional-maps=15; corridors=49; viewing-locations=53; new-england-spots=16; state-zoom=PASS; spot-popup=PASS; keyed-CARTO-tiles=PASS; switches=PASS; tiles-offline=PASS; no-JS=PASS; winter-gray=PASS; next-fall-preview=PASS; day-decision-regions=15; map-handoff=PASS; overflow=0");
 }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));
