@@ -280,6 +280,9 @@ const mapStyles=String.raw`
 #national-selected-date{font-weight:750;font-size:17px}
 #national-reset-date{background:#e8e0d1;border:1px solid #baad94;border-radius:8px;min-height:44px;padding:8px 13px;color:#2b3026;font-weight:700;cursor:pointer}
 #national-reset-date:disabled{opacity:.45;cursor:default}
+#national-preview-next{min-height:44px;padding:9px 13px;margin:6px 0 2px;border:1px solid #8e6844;border-radius:8px;background:#f7ede0;color:#513b2b;font-weight:700;cursor:pointer}
+#national-preview-next[hidden]{display:none}
+#national-preview-next:focus-visible{outline:3px solid #9c4e27;outline-offset:2px}
 #national-date-slider{display:block;width:100%;max-width:100%;margin:12px 0 4px;accent-color:#9c4e27;min-height:34px;cursor:pointer}
 .national-date-ends{display:flex;justify-content:space-between;font-size:12px;color:#6a6458}
 .national-map-legend{display:flex;flex-wrap:wrap;gap:7px 13px;margin:14px 0 8px}
@@ -311,6 +314,7 @@ const mapSection=`<section class="section national-map-shell" aria-labelledby="n
 <div id="national-map" role="region" aria-label="Map of 15 United States fall foliage regions"></div>
 <div class="national-map-controls">
 <div class="national-map-date-row"><label for="national-date-slider" id="national-selected-date">Select a fall date</label><button id="national-reset-date" type="button">Today</button></div>
+<button id="national-preview-next" type="button" hidden>Preview next fall</button>
 <input type="range" id="national-date-slider" min="0" max="98" value="0" step="1" aria-label="Preview fall foliage by date">
 <div class="national-date-ends"><span>September 1</span><span>December 8 · Texas and late-season color</span></div>
 <div class="national-map-legend" aria-label="Foliage stage legend">
