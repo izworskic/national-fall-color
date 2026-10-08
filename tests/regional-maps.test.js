@@ -61,7 +61,7 @@ test("regional map keeps the tested Michigan colors and an evidence-safe seasona
   assert.match(ui,/NationalFallMapState/);
   assert.match(ui,/state\.stageFor\(data,selected\)/);
   assert.match(ui,/not an observed reading for this individual drive/i);
-  assert.match(ui,/not mapped road routes/i);
+  assert.match(ui,/NOT a route trace/i);
   assert.match(ui,/radius:9/);
   assert.match(ui,/radius:18/);
   assert.match(ui,/26000,16000,9000/);
