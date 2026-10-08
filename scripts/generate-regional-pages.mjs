@@ -139,6 +139,12 @@ const mapStyles=String.raw`
 .national-map-intro{display:flex;align-items:baseline;gap:12px;justify-content:space-between;flex-wrap:wrap}
 .national-map-intro h2{margin:0 0 9px}
 .national-map-intro p{font-size:14px;margin:0 0 12px}
+.national-basemap-actions{display:flex;align-items:flex-start;flex-direction:column;gap:3px;flex-shrink:0}
+#national-switch-basemap{border:1px solid #b7a98e;border-radius:8px;background:#eee7d7;color:#2d3c2e;min-height:44px;padding:9px 13px;font-weight:700;font-size:13px;cursor:pointer}
+#national-switch-basemap:focus-visible{outline:3px solid #9c4e27;outline-offset:3px}
+#national-switch-basemap:disabled{opacity:.5}
+#national-basemap-status{font-size:12px;color:#605b4e;max-width:250px}
+
 #national-map{height:clamp(360px,53vw,510px);width:100%;max-width:100%;background:#d9dfd5;border:1px solid #ddd2be;border-radius:10px;z-index:0}
 .national-map-controls{padding:15px 3px 8px;min-width:0}
 .national-map-date-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
@@ -172,7 +178,7 @@ const mapStyles=String.raw`
 `;
 const mapSection=`<section class="section national-map-shell" aria-labelledby="national-map-heading">
 <div class="national-map-intro"><div><div class="kicker">Explore the changing season</div><h2 id="national-map-heading">U.S. Fall Color Map</h2>
-<p>Move the date to preview broad seasonal color across 15 regions. Tap a circle to plan your trip.</p></div></div>
+<p>Move the date to preview broad seasonal color across 15 regions. Tap a circle to plan your trip.</p></div><div class="national-basemap-actions"><button type="button" id="national-switch-basemap">Use OpenStreetMap instead</button><span role="status" aria-live="polite" id="national-basemap-status">CARTO Voyager street map</span></div></div>
 <div id="national-map" role="region" aria-label="Map of 15 United States fall foliage regions"></div>
 <div class="national-map-controls">
 <div class="national-map-date-row"><label for="national-date-slider" id="national-selected-date">Select a fall date</label><button id="national-reset-date" type="button">Today</button></div>

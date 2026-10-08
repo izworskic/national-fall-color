@@ -24,14 +24,45 @@ const address=server.address(),base="http://127.0.0.1:"+address.port;
 let browser;
 try{
   browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
+  // Do not accept "markers rendered" as proof that the actual street map works.
+  // Exercise CARTO with real network tiles and assert the Michigan key is sent.
+  const online=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,hasTouch:true,isMobile:true});
+  const liveMap=await online.newPage();
+  const tileResponses=[];
+  liveMap.on("response",response=>{
+    if(response.url().includes("basemaps.cartocdn.com/rastertiles/voyager/"))
+      tileResponses.push({url:response.url(),status:response.status(),type:response.headers()["content-type"]||""});
+  });
+  await liveMap.goto(base+"/fall-color/national/",{waitUntil:"domcontentloaded"});
+  await liveMap.waitForSelector('img.leaflet-tile-loaded[src*="basemaps.cartocdn.com"]',{timeout:18000});
+  assert.ok(tileResponses.some(t=>t.status===200&&t.type.includes("image/")&&t.url.includes("?key=cb1_")),
+    "CARTO must return a real keyed image tile, not just render empty overlay markers");
+  assert.equal(await liveMap.locator("[data-region-marker]").count(),15);
+  assert.match(await liveMap.locator("#national-basemap-status").innerText(),/CARTO Voyager/);
+  // Test the manual selector with working tiles, separately from the outage test.
+  const realSwitch=liveMap.locator("#national-switch-basemap");
+  await realSwitch.click();
+  assert.match(await liveMap.locator("#national-basemap-status").innerText(),/OpenStreetMap/);
+  await realSwitch.click();
+  assert.match(await liveMap.locator("#national-basemap-status").innerText(),/CARTO/);
+  await online.close();
+
+  // Simulate a real outage of both tile providers: region interaction must remain usable.
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1,hasTouch:true,isMobile:true});
-  await context.route(/basemaps\.cartocdn\.com|gibs\.earthdata\.nasa\.gov/,route=>route.abort());
+  await context.route(/basemaps\.cartocdn\.com|gibs\.earthdata\.nasa\.gov|tile\.openstreetmap\.org/,route=>route.abort());
   const page=await context.newPage();
   await page.clock.install({time:new Date("2026-10-08T12:00:00-04:00")});
+  const fallbackRequests=[];
+  page.on("request",request=>{if(request.url().includes("tile.openstreetmap.org"))fallbackRequests.push(request.url());});
   await page.goto(base+"/fall-color/national/",{waitUntil:"domcontentloaded"});
   await page.waitForSelector('[data-region-marker="colorado-aspens"]',{timeout:18000});
   assert.equal(await page.locator("[data-region-marker]").count(),15,"all visible 9px markers");
   assert.equal(await page.locator("[data-region-hit]").count(),15,"all marker hit targets");
+  // Both providers deliberately blocked: ensure automatic fallback activates.
+  assert.equal(await page.locator("#national-switch-basemap").count(),1);
+  await page.waitForTimeout(400);
+  assert.ok(fallbackRequests.length>0,"automatic OSM fallback requested tiles when CARTO failed");
+  assert.match(await page.locator("#national-basemap-status").innerText(),/OpenStreetMap/);
   assert.equal(await page.locator('section[aria-labelledby="region-directory"] .card a').count(),15,"15 fallback links");
   assert.ok((await page.locator("#national-selected-date").innerText()).includes("October 8"),"today in season");
   assert.equal(await page.locator('input#national-date-slider').getAttribute("max"),"98","Sept-Dec coverage");
@@ -67,7 +98,7 @@ try{
   assert.equal(await staticPage.locator('section[aria-labelledby="region-directory"] .card a').count(),15,"no-JS directory");
   await noJs.close();
   await context.close();
-  console.log("NATIONAL_MAP_BROWSER_PASS 390px; markers=15; dates=5; popup=PASS; tiles-offline=PASS; no-JS=PASS; overflow=0");
+  console.log("NATIONAL_MAP_BROWSER_PASS 390px; real-keyed-CARTO-tile=PASS; source-switch=PASS; markers=15; dates=5; popup=PASS; tiles-offline=PASS; no-JS=PASS; overflow=0");
 }finally{
   if(browser)await browser.close();
   await new Promise(resolve=>server.close(resolve));
