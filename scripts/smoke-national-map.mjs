@@ -71,8 +71,9 @@ try{
   assert.equal(await liveMap.locator("[data-regional-spot]").count(),4,"Colorado gained four relevant viewing locations");
   const coloradoSpot=liveMap.locator('[data-regional-spot-hit="1"]');
   await coloradoSpot.dispatchEvent("click");
-  await liveMap.locator(".regional-map-popup .regional-map-cta").waitFor({timeout:5000});
-  assert.equal(await liveMap.locator(".regional-map-popup .regional-map-cta").getAttribute("href"),"#viewing-1");
+  const spotCta=liveMap.locator('.regional-map-popup .regional-map-cta[href="#viewing-1"]').first();
+  await spotCta.waitFor({timeout:5000});
+  assert.equal(await spotCta.getAttribute("href"),"#viewing-1");
 
   await liveMap.waitForSelector('img.leaflet-tile-loaded[src*="basemaps.cartocdn.com"]',{timeout:18000});
   assert.ok(tileResponses.slice(priorTileResponses).some(t=>t.status===200&&t.type.includes("image/")&&t.url.includes("?key=cb1_")),
@@ -153,9 +154,11 @@ try{
   assert.equal(await ne.locator("[data-regional-drive]").count(),4,"existing four New England drives retained");
   await ne.locator("#regional-area-picker").selectOption("VT");
   assert.equal(await ne.locator("#regional-area-picker").inputValue(),"VT","state focus works");
+  await ne.locator(".regional-spot-directory summary").click();
   await ne.locator('[data-regional-spot-pick="6"]').click();
-  await ne.locator(".regional-map-popup .regional-map-cta").waitFor({timeout:5000});
-  assert.equal(await ne.locator(".regional-map-popup .regional-map-cta").getAttribute("href"),"#viewing-6");
+  const neCta=ne.locator('.regional-map-popup .regional-map-cta[href="#viewing-6"]').first();
+  await neCta.waitFor({timeout:5000});
+  assert.equal(await neCta.getAttribute("href"),"#viewing-6");
   assert.equal(await ne.locator(".regional-map-popup").getByText(/not a current reading here/i).count(),1);
   const neWidth=await ne.evaluate(()=>[document.documentElement.scrollWidth,document.documentElement.clientWidth]);
   assert.ok(neWidth[0]<=neWidth[1]+1,"New England expanded map no horizontal overflow");
