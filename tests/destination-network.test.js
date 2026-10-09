@@ -105,3 +105,28 @@ test("Michigan paths and existing location pages are not generated or replaced",
  const regionalMap=fs.readFileSync(path.join(root,"national","regional-map-ui.js"),"utf8");
  assert.ok(regionalMap.includes("Detailed fall color guide"));
 });
+
+
+test("Smokies pilot has current-season regional metadata and three genuinely distinct, crawlable decisions",()=>{
+ const region=fs.readFileSync(path.join(root,"great-smoky-mountains","index.html"),"utf8");
+ const year=String(new Date().getUTCFullYear());
+ const regionTitle=region.match(/<title>(.*?)<\\/title>/)?.[1];
+ assert.ok(regionTitle?.includes(year),"Smokies year reflects season at generation");
+ assert.ok(region.includes("Smokies fall color: Cades Cove or Newfound Gap?"));
+ assert.ok(region.includes("NPS fall color"));
+ assert.ok(region.includes("mid-October into early November"));
+ for(const slug of ["cades-cove","newfound-gap-road"]){
+  const g=guides.find(x=>x.slug===slug);
+  const html=read(g);
+  assert.ok(html.includes('<meta name="description"'));
+  assert.ok(html.includes("https://www.nps.gov/grsm/planyourvisit/fallcolor.htm"),slug+" NPS citation");
+  assert.ok(html.includes("https://www.nps.gov/grsm/planyourvisit/seasonalroads.htm"),slug+" road check");
+  assert.ok(html.includes("Typical window:"),slug+" useful initial HTML with JS disabled");
+  assert.ok(!html.includes("Reading typical fall stage…"),slug+" no generic loading placeholder");
+  assert.ok(html.includes('href="'+href(guides.find(x=>x.region===g.region&&x.slug!==slug))+'"'),slug+" real paired trip");
+ }
+ assert.ok(read(guides.find(x=>x.slug==="cades-cove")).includes("vehicle-free Wednesdays"));
+ assert.ok(read(guides.find(x=>x.slug==="newfound-gap-road")).includes("weather permitting"));
+ const sitemap=fs.readFileSync(path.join(root,"national-sitemap.xml"),"utf8");
+ assert.ok(sitemap.includes("https://chrisizworski.com/fall-color/great-smoky-mountains/"));
+});
