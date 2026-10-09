@@ -407,7 +407,7 @@ fs.mkdirSync(leafletOutput,{recursive:true});
 for(const asset of ["leaflet.js","leaflet.css"]) fs.copyFileSync(path.join(leafletDistribution,asset),path.join(leafletOutput,asset));
 fs.cpSync(path.join(leafletDistribution,"images"),path.join(leafletOutput,"images"),{recursive:true});
 const urls=["national",...regions.map(r=>r.id)];
-fs.writeFileSync(path.join(root,"public/fall-color/national-sitemap.xml"),`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(s=>`  <url><loc>${url(s)}</loc><lastmod>2026-10-08</lastmod></url>`).join("\n")}\n</urlset>\n`);
+fs.writeFileSync(path.join(root,"public/fall-color/national-sitemap.xml"),`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(s=>`  <url><loc>${url(s)}</loc><lastmod>${s==="great-smoky-mountains"?"2026-10-09":"2026-10-08"}</lastmod></url>`).join("\n")}\n</urlset>\n`);
 const locatorPath=path.join(root,"public/national-tools/fall-color/index.html");
 let locator=fs.readFileSync(locatorPath,"utf8");
 if(!locator.includes('data-2027-national-regions')){
