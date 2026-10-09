@@ -303,7 +303,7 @@ function page(r){
  const idx=regions.indexOf(r);
  const neighbors=[regions[(idx+regions.length-1)%regions.length],regions[(idx+1)%regions.length]];
  const schema={"@context":"https://schema.org","@graph":[
- {"@type":"WebPage","@id":canonical+"#webpage",url:canonical,name:r.name+" "+yearTag+" | When to Go, Best Drives & Weekend Outlook",description:r.why,isPartOf:{"@id":"https://chrisizworski.com/#website"},author:{"@id":"https://chrisizworski.com/#person"},datePublished:"2026-10-08",dateModified:"2026-10-08"},
+ {"@type":"WebPage","@id":canonical+"#webpage",url:canonical,name:r.name+" "+yearTag+" | When to Go, Best Drives & Weekend Outlook",description:r.why,isPartOf:{"@id":"https://chrisizworski.com/#website"},author:{"@id":"https://chrisizworski.com/#person"},datePublished:"2026-10-08",dateModified:isSmokies?"2026-10-09":"2026-10-08"},
  {"@type":"BreadcrumbList",itemListElement:[
  {"@type":"ListItem",position:1,name:"Fall Color",item:"https://chrisizworski.com/fall-color/"},
  {"@type":"ListItem",position:2,name:"U.S. regions",item:url("national")},
