@@ -110,7 +110,7 @@ test("Michigan paths and existing location pages are not generated or replaced",
 test("Smokies pilot has current-season regional metadata and three genuinely distinct, crawlable decisions",()=>{
  const region=fs.readFileSync(path.join(root,"great-smoky-mountains","index.html"),"utf8");
  const year=String(new Date().getUTCFullYear());
- const regionTitle=region.match(/<title>(.*?)<\\/title>/)?.[1];
+ const regionTitle=region.split("<title>")[1]?.split("</title>")[0];
  assert.ok(regionTitle?.includes(year),"Smokies year reflects season at generation");
  assert.ok(region.includes("Smokies fall color: Cades Cove or Newfound Gap?"));
  assert.ok(region.includes("NPS fall color"));
