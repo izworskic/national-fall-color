@@ -70,6 +70,19 @@ const displayNames={
  "peninsula-state-park":"Peninsula State Park",
  "skyline-drive-central":"Skyline Drive Central District"
 };
+// Authoritative NPS-based decisions specific to the two Smokies search intents.
+const smokiesBriefings={
+ "cades-cove":`<section class="card" aria-labelledby="cades-visit-choice"><span class="label">Cades Cove planning decision</span><h2 id="cades-visit-choice">Is Cades Cove better in early or late October?</h2>
+ <p><strong>Usually later than the high ridges.</strong> Cades Cove is a lower-elevation valley, so its hardwood backdrop may develop after the higher portions of Newfound Gap Road. The NPS describes the strongest colors below 4,000 feet as commonly occurring from mid-October into early November; actual timing changes each year.</p>
+ <h3>How long is the drive?</h3><p>The Cades Cove Loop Road is 11 miles and one-way. October is one of the park's busiest periods. This is not an 11-mile highway-speed drive: traffic can be slow, especially around wildlife and photo stops. Allow substantial extra time rather than promising a fixed driving duration.</p>
+ <h3>When can I drive the loop?</h3><p>NPS lists the loop as generally open sunrise to sunset, weather permitting. Vehicle-free Wednesdays ordinarily run May through September, not all year. Check current schedules, closures and the NPS parking-tag requirements before leaving.</p>
+ <p class="muted">Official references: <a href="https://www.nps.gov/grsm/planyourvisit/fallcolor.htm">NPS fall color by elevation</a> · <a href="https://www.nps.gov/grsm/planyourvisit/seasonalroads.htm">NPS seasonal road schedule</a> · <a href="https://www.nps.gov/grsm/planyourvisit/cadescove.htm">Cades Cove</a>. No live road-open status is claimed.</p></section>`,
+ "newfound-gap-road":`<section class="card" aria-labelledby="gap-visit-choice"><span class="label">Newfound Gap planning decision</span><h2 id="gap-visit-choice">When is the best time to drive Newfound Gap Road for fall color?</h2>
+ <p><strong>Compare the elevation bands, not one park-wide peak date.</strong> Newfound Gap Road (US-441) connects the Gatlinburg and Cherokee sides of the park and climbs toward a high mountain pass. NPS reports upper-elevation autumn color often developing in early to mid-October, while lower wooded valleys commonly follow from mid-October into early November.</p>
+ <h3>What makes this drive different from Cades Cove?</h3><p>Newfound Gap Road crosses changing elevations on one route: high overlooks may show color or leaf drop while hardwoods closer to Gatlinburg and Cherokee remain green or are still developing. Cades Cove is a separate lower-valley one-way loop with open fields and historic settings; it is not another segment of US-441.</p>
+ <h3>Can I drive it today?</h3><p>Newfound Gap Road is generally a year-round primary park road, <strong>weather permitting</strong>. Fog, ice, storms and other hazards can close it without much notice. Check NPS road closures and forecast conditions immediately before traveling. The Kuwohi summit road has separate seasonal access rules and must not be assumed open because US-441 is open.</p>
+ <p class="muted">Official references: <a href="https://www.nps.gov/grsm/planyourvisit/fallcolor.htm">NPS elevation-based color timing</a> · <a href="https://www.nps.gov/grsm/planyourvisit/seasonalroads.htm">NPS seasonal roads</a> · <a href="https://www.nps.gov/grsm/learn/news/autumn-is-in-the-air-in-the-great-smoky-mountains.htm">NPS 2026 autumn visitor advisory</a>. No live traffic or closure status is inferred.</p></section>`
+};
 const miles=(a,b)=>{
  const rad=Math.PI/180,dl=(b.lat-a.lat)*rad,doLon=(b.lon-a.lon)*rad;
  const q=Math.sin(dl/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(doLon/2)**2;
@@ -115,9 +128,12 @@ function page(g){
  const window=start+"–"+end;
  const publicName=displayNames[g.slug]||g.name;
  const title=publicName+" Fall Color: Peak Timing and Visit Guide | Chris Izworski";
- const desc=("When to see "+publicName+" fall colors, what makes this place special, access cautions and nearby alternatives in "+r.name+".").slice(0,155);
+ const desc=({
+  "cades-cove":"Cades Cove fall colors: when valley hardwoods usually peak, how the 11-mile loop works, vehicle-free Wednesdays, traffic and NPS road checks.",
+  "newfound-gap-road":"Newfound Gap Road fall colors: compare high and low elevations, typical October peak timing, US-441 road closures and Cades Cove alternatives."
+ }[g.slug]||("When to see "+publicName+" fall colors, what makes this place special, access cautions and nearby alternatives in "+r.name+".")).slice(0,155);
  const graph=[
- {"@type":"WebPage","@id":canonical+"#webpage",url:canonical,name:title,description:desc,inLanguage:"en-US",isAccessibleForFree:true,datePublished:"2026-10-08",dateModified:"2026-10-08",author:{"@id":"https://chrisizworski.com/#person"},about:{"@id":canonical+"#place"}},
+ {"@type":"WebPage","@id":canonical+"#webpage",url:canonical,name:title,description:desc,inLanguage:"en-US",isAccessibleForFree:true,datePublished:"2026-10-08",dateModified:g.region==="great-smoky-mountains"?"2026-10-09":"2026-10-08",author:{"@id":"https://chrisizworski.com/#person"},about:{"@id":canonical+"#place"}},
  {"@type":"Place","@id":canonical+"#place",name:g.name,geo:{"@type":"GeoCoordinates",latitude:g.lat,longitude:g.lon}},
  {"@type":"BreadcrumbList",itemListElement:[
  {"@type":"ListItem",position:1,name:"Fall color",item:"https://chrisizworski.com/fall-color/"},
@@ -150,16 +166,16 @@ function page(g){
  '<div class="grid"><section class="card"><span class="label">Typical viewing-area color window · not live</span><div class="stage">'+esc(window)+'</div>'+
  '<p class="muted">Geography-specific approximate seasonal timing based on '+esc(g.timing.area)+'. These are illustrative windows, not measured peak dates or a live point-level leaf report.</p>'+
  '<div class="controls"><label for="guide-date">Check your date</label><input type="date" id="guide-date"><button id="preview-next" type="button" hidden>Preview next fall</button></div>'+
- '<div class="answer" role="status" aria-live="polite"><strong id="stage-verdict">Reading typical fall stage…</strong><p id="stage-reason">Current leaf observations are not available for this point.</p></div></section>'+
+ '<div class="answer" role="status" aria-live="polite"><strong id="stage-verdict">'+esc(g.region==="great-smoky-mountains"?"Typical window: "+window:"Historical timing guide")+'</strong><p id="stage-reason">Select a date above for the season-stage estimate. This is not a live leaf-color reading.</p></div></section>'+
  '<aside class="card"><span class="label">Choose the trip, not just a date</span><h2 style="margin:8px 0">Can I go?</h2><p>A promising fall-color window does not establish road access, park admission, parking or trail safety. Verify official rules and check current weather.</p>'+
  '<div class="links"><a href="'+regionLink+'">Compare the region</a><a href="'+esc(g.access)+'" rel="noopener noreferrer">Verify access ↗</a></div>'+
  '<p class="muted">Map point is an approximate scenic corridor or viewing area, not a parking-lot coordinate or driving route.</p></aside></div>'+
  '<section class="card" aria-labelledby="compare-title"><span class="label">One date, two different landscapes</span><h2 id="compare-title" style="margin:8px 0 4px">Also consider '+esc(displayNames[other[0].slug]||other[0].name)+'</h2>'+
  '<p>Its modeled typical color window: '+esc(otherWindow)+'. Compare both locations on the date selected above—different areas do not all peak together.</p>'+
- '<p id="comparison-verdict" class="muted" aria-live="polite">Comparing the two typical timing profiles…</p>'+
+ '<p id="comparison-verdict" class="muted" aria-live="polite">'+esc(publicName+": "+window+"; "+(displayNames[other[0].slug]||other[0].name)+": "+otherWindow+" (typical historic windows, not observations).")+'</p>'+
  '<p><a href="'+url(other[0].region,other[0].slug)+'">Explore the '+esc(displayNames[other[0].slug]||other[0].name)+' fall-color guide →</a></p></section>'+
  ''+
- '<h2>How to plan the visit</h2><p>'+esc(g.plan)+'</p>'+
+ '<h2>How to plan the visit</h2><p>'+esc(g.plan)+'</p>'+(smokiesBriefings[g.slug]||'')+
  '<h2>Road, park and safety checks</h2><div class="warning"><p>'+esc(g.caution)+'</p></div>'+
  '<h2>If the color or access does not line up</h2><p>'+esc(g.alternative)+'</p>'+
  '<p>Use the <a href="'+regionLink+'">'+esc(r.name)+' decision planner</a> to compare individual location timing for your date and outing preference. The regional map does not assume that all locations peak together.</p>'+
