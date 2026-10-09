@@ -133,7 +133,7 @@ function page(g){
   "newfound-gap-road":"Newfound Gap Road fall colors: compare high and low elevations, typical October peak timing, US-441 road closures and Cades Cove alternatives."
  }[g.slug]||("When to see "+publicName+" fall colors, what makes this place special, access cautions and nearby alternatives in "+r.name+".")).slice(0,155);
  const graph=[
- {"@type":"WebPage","@id":canonical+"#webpage",url:canonical,name:title,description:desc,inLanguage:"en-US",isAccessibleForFree:true,datePublished:"2026-10-08",dateModified:"2026-10-08",author:{"@id":"https://chrisizworski.com/#person"},about:{"@id":canonical+"#place"}},
+ {"@type":"WebPage","@id":canonical+"#webpage",url:canonical,name:title,description:desc,inLanguage:"en-US",isAccessibleForFree:true,datePublished:"2026-10-08",dateModified:g.region==="great-smoky-mountains"?"2026-10-09":"2026-10-08",author:{"@id":"https://chrisizworski.com/#person"},about:{"@id":canonical+"#place"}},
  {"@type":"Place","@id":canonical+"#place",name:g.name,geo:{"@type":"GeoCoordinates",latitude:g.lat,longitude:g.lon}},
  {"@type":"BreadcrumbList",itemListElement:[
  {"@type":"ListItem",position:1,name:"Fall color",item:"https://chrisizworski.com/fall-color/"},
