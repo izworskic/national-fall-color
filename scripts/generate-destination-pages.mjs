@@ -122,6 +122,20 @@ function client(){
  button.addEventListener("click",()=>{input.value=String(year+1)+"-10-01";button.hidden=true;render();});
  input.addEventListener("change",render);render();
 }
+// Destination guides reuse their region's one cached daily edition at zero extra model cost.
+function dailyBriefingClient(area){
+ fetch("https://chrisizworski.com/api/fall-color?view=national-briefings&region="+encodeURIComponent(area),{headers:{accept:"application/json"}})
+  .then(r=>{if(!r.ok)throw Error("briefing unavailable");return r.json();})
+  .then(d=>{
+    if(!d||!d.briefing||d.method!=="AI-generated model summary")return;
+    const box=document.getElementById("daily-editorial"),note=document.getElementById("daily-editorial-text");
+    const stamp=document.getElementById("daily-editorial-updated");
+    if(!box||!note||!stamp)return;
+    note.textContent=d.briefing;
+    stamp.textContent="Regional daily summary · "+d.date+" · modeled timing and weather, not a destination-specific observed leaf report.";
+    box.hidden=false;
+  }).catch(()=>{}); // No generated copy if today's edition is missing.
+}
 function page(g){
  const r=regionById[g.region],canonical=url(g.region,g.slug),regionLink=regionUrl(g.region);
  const start=human(state.isoFromDoy(2027,g.peak[0])),end=human(state.isoFromDoy(2027,g.peak[1]));
@@ -163,6 +177,7 @@ function page(g){
  '<header class="top"><div class="shell"><a href="/">Chris Izworski</a><nav><a href="/fall-color/">Michigan fall color</a><a href="/fall-color/national/">U.S. map</a><a href="'+regionLink+'">'+esc(r.name)+'</a></nav></div></header>'+
  '<main class="shell"><div class="crumb"><a href="/fall-color/national/">U.S. Fall Color</a> / <a href="'+regionLink+'">'+esc(r.name)+'</a> / '+esc(g.name)+'</div><div class="kicker">Destination fall-color field guide</div>'+
  '<h1>When to see fall color at '+esc(publicName)+'</h1><p class="lead">'+esc(g.experience)+'</p>'+
+ '<section id="daily-editorial" class="card" hidden><h2>Daily regional briefing</h2><p id="daily-editorial-text"></p><p class="muted" id="daily-editorial-updated"></p></section>'+
  '<div class="grid"><section class="card"><span class="label">Typical viewing-area color window · not live</span><div class="stage">'+esc(window)+'</div>'+
  '<p class="muted">Geography-specific approximate seasonal timing based on '+esc(g.timing.area)+'. These are illustrative windows, not measured peak dates or a live point-level leaf report.</p>'+
  '<div class="controls"><label for="guide-date">Check your date</label><input type="date" id="guide-date"><button id="preview-next" type="button" hidden>Preview next fall</button></div>'+
@@ -189,7 +204,7 @@ function page(g){
  (gatewayForGuide[g.slug]||[]).map(key=>'<p class="muted"><a href="/national-tools/fall-color/'+key+'/">Also compare the city forecast for '+esc(cityNetwork[key].name)+'</a>. This is a regional context forecast, not a point observation at '+esc(publicName)+'.</p>').join("")+
  '<script type="application/json" id="guide-timing">'+json({peak:g.peak,name:publicName,other:{name:displayNames[other[0].slug]||other[0].name,peak:other[0].peak}})+'</script></main>'+
  '<footer><div class="shell">Researched field guide by <a href="/chris-izworski/">Chris Izworski</a>. <a href="/fall-color/">Michigan’s separate live foliage engine</a> is unchanged.</div></footer>'+
- '<script>('+client.toString()+')();</script></body></html>';
+ '<script>('+client.toString()+')();('+dailyBriefingClient.toString()+')('+json(g.region)+');</script></body></html>';
  return html;
 }
 for(const g of all){
