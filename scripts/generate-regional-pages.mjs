@@ -77,9 +77,9 @@ async function observations(){
 async function dailyBriefing(){
  try{
   const d=await api("https://chrisizworski.com/api/fall-color?view=national-briefings&region="+encodeURIComponent(area));
-  if(!d||!d.briefing||d.method!=="AI-generated model summary")return;
+  if(!d||!d.briefing||!["AI-generated model summary","Deterministic model summary"].includes(d.method))return;
   set("daily-editorial-text",d.briefing);
-  set("daily-editorial-updated","Published "+safeLocal(d.updated)+" · AI interpretation of modeled timing and NWS weather, not an observed leaf report.");
+  set("daily-editorial-updated","Published "+safeLocal(d.updated)+" · "+(d.method==="Deterministic model summary"?"Source-based summary":"AI interpretation")+" of modeled timing and NWS weather, not an observed leaf report.");
   const panel=document.getElementById("daily-editorial");
   if(panel)panel.hidden=false;
  }catch{} // Unavailable notes are hidden, not replaced with invented live descriptions.
