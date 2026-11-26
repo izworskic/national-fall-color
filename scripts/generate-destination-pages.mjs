@@ -127,12 +127,12 @@ function dailyBriefingClient(area){
  fetch("https://chrisizworski.com/api/fall-color?view=national-briefings&region="+encodeURIComponent(area),{headers:{accept:"application/json"}})
   .then(r=>{if(!r.ok)throw Error("briefing unavailable");return r.json();})
   .then(d=>{
-    if(!d||!d.briefing||d.method!=="AI-generated model summary")return;
+    if(!d||!d.briefing||!["AI-generated model summary","Deterministic model summary"].includes(d.method))return;
     const box=document.getElementById("daily-editorial"),note=document.getElementById("daily-editorial-text");
     const stamp=document.getElementById("daily-editorial-updated");
     if(!box||!note||!stamp)return;
     note.textContent=d.briefing;
-    stamp.textContent="Regional daily summary · "+d.date+" · modeled timing and weather, not a destination-specific observed leaf report.";
+    stamp.textContent=(d.method==="Deterministic model summary"?"Regional source-based summary":"Regional AI summary")+" · "+d.date+" · modeled timing and weather, not a destination-specific observed leaf report.";
     box.hidden=false;
   }).catch(()=>{}); // No generated copy if today's edition is missing.
 }

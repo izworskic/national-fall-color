@@ -52,9 +52,10 @@ test("30 canonical destination pages publish real place identity, map timing, of
   assert.equal(timing.peak.length,2);
   assert.equal(timing.other.peak.length,2,g.slug+" pair independent model data");
   assert.equal(timing.other.name,({"maroon-bells-aspen-color":"Maroon Bells / Maroon Creek","lost-maples":"Lost Maples State Natural Area","acadia-park-loop-road":"Acadia National Park Loop Road","cades-cove":"Cades Cove","peninsula-state-park":"Peninsula State Park","skyline-drive-central":"Skyline Drive Central District"}[other.slug]||other.name),g.slug+" real comparison name");
-  const script=h.match(/<script>\((function client\(\)[\s\S]*?)\)\(\);<\/script>/)?.[1];
+  const script=h.match(/<script>(\(function client\(\)[\s\S]*?)<\/script>/)?.[1];
   assert.ok(script,g.slug+" date engine");
-  assert.doesNotThrow(()=>new vm.Script("("+script+")();"),g.slug+" JS syntax");
+  assert.match(script,/\(function dailyBriefingClient\(area\)/,g.slug+" daily briefing reader");
+  assert.doesNotThrow(()=>new vm.Script(script),g.slug+" combined JS syntax");
  }
 });
 test("all 15 regions and the U.S. hub form a crawlable two-level topical network",()=>{

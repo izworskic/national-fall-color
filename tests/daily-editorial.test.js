@@ -17,6 +17,16 @@ test("all 15 regional pages show a daily note ONLY when a cached edition is avai
   const html=fs.readFileSync(p,"utf8");
   assert.match(html,/id="daily-editorial"/);
   assert.match(html,/dailyBriefing\(\)/);
-  assert.match(html,/method!=="AI-generated model summary"/);
+  assert.match(html,/\["AI-generated model summary","Deterministic model summary"\]\.includes\(d\.method\)/);
+  assert.match(html,/Source-based summary/);
+ }
+});
+
+test("both reader templates accept only explicitly labeled methods and never invoke generation",()=>{
+ for(const src of [regionGenerator,destinationGenerator]){
+   assert.match(src,/\["AI-generated model summary","Deterministic model summary"\]\.includes\(d\.method\)/);
+   assert.match(src,/d\.method==="Deterministic model summary"/);
+   assert.match(src,/not (?:an|a destination-specific) observed leaf report/);
+   assert.doesNotMatch(src,/api\.anthropic\.com/);
  }
 });
